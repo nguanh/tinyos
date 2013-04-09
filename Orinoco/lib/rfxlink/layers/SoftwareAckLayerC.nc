@@ -32,7 +32,7 @@
  * Author: Miklos Maroti
  */
 
-generic configuration DummyLayerC()
+generic configuration SoftwareAckLayerC()
 {
 	provides
 	{

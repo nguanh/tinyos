@@ -7,25 +7,12 @@ CFLAGS += \
 	-I .                  \
 	-I $(TOSDIR)/lib/net  \
 	-I ../../lib          \
-	-I ../../chips/rf2xx/rf230  \
+	-I ../../chips/rf230  \
 	-I ../../platforms/iris     \
-	-I ../../../MyLocalTime/lib \
+	-I ../../../LocalTimeSyncedMicro/lib \
+	-I ../../../LocalTimeSyncedMicro/atm1281 \
+	-I ../../../LocalTimeSyncedMicro/atm1281/timer \
 
-
-#	-I ../../../EnergyProfiler/lib \
-#	-I ../../../EAJobs/interfaces \
-#	-I ../../interfaces \
-#	-I ../../../EAJobs/lib \
-#	-I ../../../MyLocalTime/lib \
-#	-I ../../lib \
-#	-I ../../lib/jobs \
-#	-I ../../lib/sensors \
-#	-I ../../lib/configurator \
-#	-I ../../lib/generic_crc \
-#	-I ../../chips/atm128/flash
-#        -I$(TOSDIR)/lib/printf
-	
-#LDFLAGS += ../../lib/FixPointMath.c
-LDFLAGS += ../../lib/Statistics.c
+LDFLAGS += ../../../Tools/Statistics.c
 
 include $(MAKERULES)

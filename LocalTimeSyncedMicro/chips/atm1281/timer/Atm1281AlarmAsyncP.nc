@@ -97,7 +97,7 @@ implementation
 
 	x.flat = 0;
 	x.bits.wgm21 = 1; /* We use the clear-on-compare mode */
-	// added by renner: output compare matched to pin b4
+	// added by C. Renner: output compare matched to pin b4
 	// NOTE that 1mhz counter currently uses a work-around to cope with toggling,
 	// though it requires to captures *every* compare match
 	SET_BIT(DDRB, DDB4);  // use DDR_OCR2 ... ?
@@ -205,7 +205,7 @@ implementation
     base += call Compare.get() + 1U; // interrupt is 1ms late
     overflowed = !base;
 
-    // added by renner, 20110721
+    // added by C. Renner, 20110721
     // force a 2nd compare match to clear OC2A
     {
     Atm128_TCCR2B_t y;
@@ -293,7 +293,7 @@ implementation
 
   async event void Timer.overflow() { }
 
-  // added CR, 20110720
+  // added C. Renner, 20110720
   // return the time of the latest compare interrupt
   async command uint32_t GetNow.getNow() {
     return base;
