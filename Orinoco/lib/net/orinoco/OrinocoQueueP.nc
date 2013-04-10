@@ -270,6 +270,7 @@ implementation {
 // should be the same could as below
 //    // attach time of creation for latency tracking
 //    call PacketTimeSyncOffset.set(msg, len);
+//    call PacketDelay.init();
 
     // STEP 3: trigger self-reception (for roots) or sending
     if (call SendQueue.enqueue(qe) == SUCCESS) {
@@ -359,6 +360,13 @@ implementation {
       h->path[h->hopCnt] = TOS_NODE_ID;  // FIXME DEBUG only
     }
     h->hopCnt++;  // we're one hop away from previous station
+
+// TODO
+// - get locale (radio) time of packet creation
+// - get (radio) time delta
+// - convert to real micro time
+// - store value
+// call PacketDelay.update();
 
 // TODO multi
 //    // convert time of creation to locale time for latency tracking
