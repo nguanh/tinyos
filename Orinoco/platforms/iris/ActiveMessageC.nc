@@ -33,7 +33,7 @@
  */
 /**
  * Modifications by Christian Renner from Hamburg University of Technology:
- * Removed PacketLink, PacketAcknowledgement, and LowPowerListening to comply
+ * Removed PacketAcknowledgement, and LowPowerListening to comply
  * with Orinoco
  */
 
@@ -53,7 +53,16 @@ configuration ActiveMessageC
 		interface Packet;
 		interface AMPacket;
 
+//                interface PacketAcknowledgements;
+//                interface LowPowerListening;
+		interface PacketLink;
 		interface RadioChannel;
+
+// added by CR
+//                interface PacketField<uint8_t> as PacketLinkQuality;
+//                interface PacketField<uint8_t> as PacketTransmitPower;
+//                interface PacketField<uint8_t> as PacketRSSI;
+                interface LinkPacketMetadata;
 
 		interface PacketTimeStamp<TMicro, uint32_t> as PacketTimeStampMicro;
 		interface PacketTimeStamp<TMilli, uint32_t> as PacketTimeStampMilli;
@@ -74,7 +83,16 @@ implementation
 	Packet = MessageC;
 	AMPacket = MessageC;
 
+//	PacketAcknowledgements = MessageC;
+//	LowPowerListening = MessageC;
+	PacketLink = MessageC;
 	RadioChannel = MessageC;
+
+// added by CR
+//	PacketLinkQuality = MessageC.PacketLinkQuality;
+//	PacketTransmitPower = MessageC.PacketTransmitPower;
+//	PacketRSSI = MessageC.PacketRSSI;
+	LinkPacketMetadata = MessageC;
 
 	PacketTimeStampMilli = MessageC;
 	PacketTimeStampMicro = MessageC;

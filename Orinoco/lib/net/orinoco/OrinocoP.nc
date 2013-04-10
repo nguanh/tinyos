@@ -39,6 +39,8 @@
 
 #include "Orinoco.h"
 
+// TODO FIXME
+// check whether these are IRIS specific or valid for other platforms as well!
 // compatibility check
 #ifdef PACKET_LINK
 #	error Please deactivate PACKET_LINK
@@ -84,21 +86,15 @@ implementation {
   Snoop                 = Queue.Snoop;
   Intercept             = Queue;
   MainC                -> Queue.Init;
-  PacketDelay           = Queue;
+
+  components PacketDelayC;
+  PacketDelay   = PacketDelayC;
 
   components OrinocoRadioC;
-  RadioControl          = OrinocoRadioC;
+  RadioControl      = OrinocoRadioC;
   Queue.SubPacket  -> OrinocoRadioC;
   Queue.SubReceive -> OrinocoRadioC.Receive;
   Queue.SubSend    -> OrinocoRadioC;
-
-  // packet time stamping and delay calculation
-  Queue.LocalTimeRadio       -> OrinocoRadioC;
-  Queue.PacketTimeSyncOffset -> OrinocoRadioC;
-  Queue.PacketTimeStampRadio -> OrinocoRadioC;
-
-  components LocalTimeMilliC;
-  Queue.LocalTimeMilli -> LocalTimeMilliC;
 
   // config
   components OrinocoConfigC;

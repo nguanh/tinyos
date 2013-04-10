@@ -43,7 +43,7 @@ module OrinocoPathCostHopCountP {
   }
   uses {
     interface RootControl;
-    interface LinkPacketMetadata;
+//    interface LinkPacketMetadata;
   }
 }
 implementation {
@@ -68,8 +68,8 @@ implementation {
       curCost_ = ORINOCO_PATHCOST_INF;
     }
     // NOTE in sparse networks, the following code is prone to
-    // routing loops, frequently to packets being sent back to where
-    // they are coming from
+    // routing loops, frequently leading to packets being sent back
+    // to where they are coming from
     //curCost_ = altCost_;
     //altCost_ = ORINOCO_PATHCOST_INF;
   }
@@ -82,10 +82,10 @@ implementation {
       return FALSE;
     }
 
-    // if beacon has poor link quality, reject
-    if (! call LinkPacketMetadata.highChannelQuality(msg)) {
-      return FALSE;
-    }
+//    // if beacon has poor link quality, reject
+//    if (! call LinkPacketMetadata.highChannelQuality(msg)) {
+//      return FALSE;
+//    }
 
     // do not react to infinite costs (these beacons should not be sent)
     if (cost == ORINOCO_PATHCOST_INF) {

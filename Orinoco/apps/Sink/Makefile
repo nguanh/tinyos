@@ -6,6 +6,8 @@ CFLAGS += -DORINOCO_DEBUG_STATISTICS
 CFLAGS += -DDISABLE_SYNCED_MICRO
 CFLAGS += -DORINOCO_QUEUE_SIZE=1
 
+ifeq (1,0)
+# IRIS
 CFLAGS += \
 	-I .                  \
 	-I $(TOSDIR)/lib/net  \
@@ -18,9 +20,27 @@ CFLAGS += \
 	-I ../../../LocalTimeSyncedMicro/chips/atm1281 \
 	-I ../../../LocalTimeSyncedMicro/chips/atm1281/timer \
 	-I ../../../Reporting \
-        -I ../../../EAJobs/interfaces \
-        -I ../../../EAJobs/lib \
-        -I ../../../Tools \
+	-I ../../../EAJobs/interfaces \
+	-I ../../../EAJobs/lib \
+	-I ../../../Tools
+else
+# TELOS
+CFLAGS += \
+	-I .                  \
+	-I $(TOSDIR)/lib/net  \
+	-I ../../interfaces   \
+	-I ../../lib/net/orinoco  \
+	-I ../../lib/rfxlink/layers  \
+	-I ../../chips/cc2420  \
+	-I ../../platforms/telosb     \
+	-I ../../../LocalTimeSyncedMicro/lib \
+	-I ../../../LocalTimeSyncedMicro/chips/msp430 \
+	-I ../../../LocalTimeSyncedMicro/chips/msp430/timer \
+	-I ../../../Reporting \
+	-I ../../../EAJobs/interfaces \
+	-I ../../../EAJobs/lib \
+	-I ../../../Tools
+endif
 
 LDFLAGS += ../../../Tools/Statistics.c
 

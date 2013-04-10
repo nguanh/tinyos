@@ -31,7 +31,7 @@
  *
  * Author: Miklos Maroti
  */
-/* Modifications by Christian Renner, TUHH */
+/* modifications for Orinoco by Christian Renner (TUHH) */
 
 #include <RadioConfig.h>
 
@@ -50,20 +50,22 @@ configuration RF230ActiveMessageC
 		interface Receive as Snoop[am_id_t id];
 		interface SendNotifier[am_id_t id];
 
+		// for TOSThreads
+//		interface Receive as ReceiveDefault[am_id_t id];
+//		interface Receive as SnoopDefault[am_id_t id];
+
 		interface Packet;
 		interface AMPacket;
 
 //		interface PacketAcknowledgements;
 //		interface LowPowerListening;
-//#ifdef PACKET_LINK
-//		interface PacketLink;
-//#endif
-
+		interface PacketLink;
 		interface RadioChannel;
 
 		interface PacketField<uint8_t> as PacketLinkQuality;
 		interface PacketField<uint8_t> as PacketTransmitPower;
 		interface PacketField<uint8_t> as PacketRSSI;
+		interface LinkPacketMetadata;
 
 		interface LocalTime<TRadio> as LocalTimeRadio;
 		interface PacketTimeStamp<TRadio, uint32_t> as PacketTimeStampRadio;
@@ -73,31 +75,32 @@ configuration RF230ActiveMessageC
 
 implementation
 {
-	components RF230RadioC;
+	components RF230RadioC as RadioC;
 
-	SplitControl = RF230RadioC;
+	SplitControl = RadioC;
 
-	AMSend = RF230RadioC;
-	Receive = RF230RadioC.Receive;
-	Snoop = RF230RadioC.Snoop;
-	SendNotifier = RF230RadioC;
+	AMSend = RadioC;
+	Receive = RadioC.Receive;
+	Snoop = RadioC.Snoop;
+	SendNotifier = RadioC;
 
-	Packet = RF230RadioC.PacketForActiveMessage;
-	AMPacket = RF230RadioC;
+//	ReceiveDefault = RadioC.ReceiveDefault;
+//	SnoopDefault = RadioC.SnoopDefault;
 
-//	PacketAcknowledgements = RF230RadioC;
-//	LowPowerListening = RF230RadioC;
-//#ifdef PACKET_LINK
-//	PacketLink = RF230RadioC;
-//#endif
+	Packet = RadioC.PacketForActiveMessage;
+	AMPacket = RadioC;
 
-	RadioChannel = RF230RadioC;
+//	PacketAcknowledgements = RadioC;
+//	LowPowerListening = RadioC;
+	PacketLink = RadioC;
+	RadioChannel = RadioC;
 
-	PacketLinkQuality = RF230RadioC.PacketLinkQuality;
-	PacketTransmitPower = RF230RadioC.PacketTransmitPower;
-	PacketRSSI = RF230RadioC.PacketRSSI;
+	PacketLinkQuality = RadioC.PacketLinkQuality;
+	PacketTransmitPower = RadioC.PacketTransmitPower;
+	PacketRSSI = RadioC.PacketRSSI;
+	LinkPacketMetadata = RadioC;
 
-	LocalTimeRadio = RF230RadioC;
-	PacketTimeStampMilli = RF230RadioC;
-	PacketTimeStampRadio = RF230RadioC;
+	LocalTimeRadio = RadioC;
+	PacketTimeStampMilli = RadioC;
+	PacketTimeStampRadio = RadioC;
 }

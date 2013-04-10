@@ -47,10 +47,11 @@ configuration OrinocoRadioC {
     interface Send;
     interface Receive;
 
-    // packet time stamping and delay calculation
-    interface LocalTime<TRadio> as LocalTimeRadio;
-    interface PacketField<uint8_t> as PacketTimeSyncOffset;
-    interface PacketTimeStamp<TRadio, uint32_t> as PacketTimeStampRadio;
+// TODO multi
+//    // packet time stamping and delay calculation
+//    interface LocalTime<TRadio> as LocalTimeRadio;
+//    interface PacketField<uint8_t> as PacketTimeSyncOffset;
+//    interface PacketTimeStamp<TRadio, uint32_t> as PacketTimeStampRadio;
   }
   uses {
     interface OrinocoPathCost;
@@ -80,26 +81,15 @@ implementation {
   Mac.BeaconSubSend    -> AM.AMSend[ORINOCO_AM_BEACON];
   Mac.DataSubSend      -> OrinocoForwardLayerC; // AM.AMSend[ORINOCO_AM_DATA];
 
-  PacketTimeStampRadio  = AM;
+  // TODO Temporary solution, should be moved in sep. module
+  Mac.LinkPacketMetadata -> AM;
+  //Mac.PacketRSSI         -> AM.PacketRSSI;
+
+//  PacketTimeStampRadio  = AM;
 
   components OrinocoForwardLayerC;
   OrinocoForwardLayerC.SubSendData -> AM.AMSend[ORINOCO_AM_DATA];
   OrinocoForwardLayerC.Config      -> Mac;
-
-  // receive quality of packet
-  #if defined (PLATFORM_IRIS)
-    //components RF230ActiveMessageC as PlatformActiveMessageC;
-    components RF230RadioC as PlatformRadioC;
-    components RF230DriverLayerC as PlatformDriverLayerC;
-  #else
-  #  error "Platform not supported"
-  #endif
-  Mac.PacketLinkQuality -> PlatformRadioC.PacketLinkQuality;
-  Mac.PacketRSSI        -> PlatformRadioC.PacketRSSI;
-
-  LocalTimeRadio       = PlatformRadioC;
-
-  PacketTimeSyncOffset = PlatformDriverLayerC.PacketTimeSyncOffset;
 
   components new TimerMilliC() as Timer;
   Mac.Timer -> Timer;

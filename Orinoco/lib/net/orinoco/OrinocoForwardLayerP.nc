@@ -106,7 +106,7 @@ implementation {
 
     // this must not happen
     } else {
-      RADIO_ASSERT(FALSE);
+      //RADIO_ASSERT(FALSE);
     }
 
     return FAIL;
@@ -123,7 +123,7 @@ implementation {
   
   /*** SubAMSend *********************************************************/
   event void SubAMSend.sendDone(message_t * msg, error_t error) {
-    RADIO_ASSERT(msg == txBuf_);
+    //RADIO_ASSERT(msg == txBuf_);
     // we cannot afford any delay here
     state_ = STATE_READY;
     signal AMSend.sendDone(txBuf_, error);
@@ -134,7 +134,7 @@ implementation {
   event void Timer.fired() {
     error_t error;
 
-    RADIO_ASSERT(state_ == STATE_BACKOFF);
+    //RADIO_ASSERT(state_ == STATE_BACKOFF);
 
     error = call SubAMSend.send(txDst_, txBuf_, txLen_);
     if (error == SUCCESS) {

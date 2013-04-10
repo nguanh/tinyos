@@ -37,7 +37,7 @@
  * @date December 14 2011
  */
 
-#include <RadioAssert.h>
+//#include <RadioAssert.h>
 #include "OrinocoBeaconMsg.h"
 #include "Orinoco.h"
 #include "Statistics.h"
@@ -68,12 +68,10 @@ module OrinocoRadioP {
     interface AMSend as BeaconSubSend;
     interface AMSend as DataSubSend;
 
-    // packet meta data
-    interface PacketField<uint8_t> as PacketLinkQuality;
-    interface PacketField<uint8_t> as PacketRSSI;
-
     // path metric
     interface OrinocoPathCost as PathCost;
+    interface LinkPacketMetadata;
+//    interface PacketField<uint8_t> as PacketRSSI;
 
     // configuration
     interface OrinocoConfig as Config;
@@ -129,13 +127,19 @@ implementation {
 
   // process beacon and determine whether to accept neigbhor for data forwarding
   bool processBeacon(message_t * msg, bool update) {
-    OrinocoBeaconMsg * p = (OrinocoBeaconMsg *)call SubPacket.getPayload(msg, sizeof(OrinocoBeaconMsg *));
+    bool accept = FALSE;
+    // TODO this could be encapsulated by a stand-alone module to enable
+    // different implementations
+    //if (call PacketRSSI.get(msg) >= ORINOCO_MIN_RSSI) {
+    if (call LinkPacketMetadata.highChannelQuality(msg)) {
+      OrinocoBeaconMsg * p = (OrinocoBeaconMsg *)call SubPacket.getPayload(msg, sizeof(OrinocoBeaconMsg *));
 
-    bool accept = call PathCost.inspectBeacon(msg, p->cost, update);
-    if (accept) {
-      // if this beacon is acceptible, store sender id for (immediate) forwarding
-      txDataDst_        = call SubAMPacket.source(msg);
-      txDataMaxBackoff_ = p->cw;
+      accept = call PathCost.inspectBeacon(msg, p->cost, update);
+      if (accept) {
+        // if this beacon is acceptible, store sender id for (immediate) forwarding
+        txDataDst_        = call SubAMPacket.source(msg);
+        txDataMaxBackoff_ = p->cw;
+      }
     }
 
 #ifdef ORINOCO_DEBUG_STATISTICS
@@ -203,7 +207,7 @@ implementation {
     // switch on radio to receive or forward
     if (state_ == RECEIVE_SUBSTART || state_ == FORWARD_SUBSTART) {
       error = call SubControl.start();
-      RADIO_ASSERT(error == SUCCESS || error == EBUSY);
+      //RADIO_ASSERT(error == SUCCESS || error == EBUSY);
 
       if (error == SUCCESS) {
         state_++;             // ok -> next state
@@ -214,7 +218,7 @@ implementation {
     // switch off radio for sleeping or complete disable (off)
     } else if (state_ == SLEEP_SUBSTOP || state_ == OFF_SUBSTOP) {
       error = call SubControl.stop();
-      RADIO_ASSERT(error == SUCCESS || error == EBUSY);
+      //RADIO_ASSERT(error == SUCCESS || error == EBUSY);
     
       if (error == SUCCESS) {
         state_++;             // ok -> next state
@@ -256,7 +260,7 @@ implementation {
 
     // shall send current packet
     } else if (state_ == FORWARD_SUBSEND) {
-      RADIO_ASSERT(txDataMsg_ != NULL);
+      //RADIO_ASSERT(txDataMsg_ != NULL);
       txDataError_ = call DataSubSend.send(txDataDst_, txDataMsg_, txDataLen_);
 
       if (txDataError_ == SUCCESS) {
@@ -415,8 +419,8 @@ implementation {
 
   /*** SubControl ********************************************************/
   event void SubControl.startDone(error_t error) {
-    RADIO_ASSERT(error == SUCCESS || error == EBUSY);
-    RADIO_ASSERT(state_ == FORWARD_SUBSTART_DONE || state_ == RECEIVE_SUBSTART_DONE);
+    //RADIO_ASSERT(error == SUCCESS || error == EBUSY);
+    //RADIO_ASSERT(state_ == FORWARD_SUBSTART_DONE || state_ == RECEIVE_SUBSTART_DONE);
 
     if (error == SUCCESS) {
       call Leds.led0On();
@@ -430,8 +434,8 @@ implementation {
 
 
   event void SubControl.stopDone(error_t error) {
-    RADIO_ASSERT(error == SUCCESS || error == EBUSY);
-    RADIO_ASSERT(state_ == OFF_SUBSTOP_DONE || state_ == SLEEP_SUBSTOP_DONE);
+    //RADIO_ASSERT(error == SUCCESS || error == EBUSY);
+    //RADIO_ASSERT(state_ == OFF_SUBSTOP_DONE || state_ == SLEEP_SUBSTOP_DONE);
 
     if (error == SUCCESS) {
       call Leds.led0Off();
@@ -446,8 +450,8 @@ implementation {
 
   /*** Timer *************************************************************/
   event void Timer.fired() {
-    RADIO_ASSERT(state_ == SLEEP || state_ == RECEIVE || state_ == FORWARD ||
-                 state_ == FORWARD_SUBSEND || state_ == FORWARD_SUBSEND_DONE);
+    //RADIO_ASSERT(state_ == SLEEP || state_ == RECEIVE || state_ == FORWARD ||
+    //             state_ == FORWARD_SUBSEND || state_ == FORWARD_SUBSEND_DONE);
 
     // The timer may fire within FORWARD_SUBSEND or FORWARD_SUBSEND_DONE,
     // which should be a very rare event! To avoid any additional complexity
@@ -530,7 +534,7 @@ implementation {
     if (state_ == FORWARD) {
       bool isAck = FALSE;
 
-      RADIO_ASSERT(txDataMsg_ != NULL);
+      //RADIO_ASSERT(txDataMsg_ != NULL);
       //call Leds.led1Toggle();
 
       // STEP 1
@@ -572,7 +576,7 @@ implementation {
       // if the beacon is from our current tx-destination, but addressed to
       // someone else, we are too late and should re-schedule sending
       if (call SubAMPacket.source(msg) == txDataDst_ && ! call SubAMPacket.isForMe(msg)) {
-        RADIO_ASSERT(txDataMsg_ != NULL);
+        //RADIO_ASSERT(txDataMsg_ != NULL);
 
         //DEBUG printf("ups (tx seqno %u, beac seqno %u)\n", ((orinoco_data_header_t *)(1 + call SubPacket.getPayload(txDataMsg_, txDataLen_)))->seqno, ((OrinocoBeaconMsg *)call SubPacket.getPayload(msg, sizeof(OrinocoBeaconMsg *)))->seqno); printfflush();
 
@@ -640,8 +644,8 @@ implementation {
 
   /*** BeaconSubSend *****************************************************/
   event void BeaconSubSend.sendDone(message_t * msg, error_t error) {
-    RADIO_ASSERT(state_ == RECEIVE_SUBSEND_DONE);
-    RADIO_ASSERT(msg == &txBeaconMsg_);
+    //RADIO_ASSERT(state_ == RECEIVE_SUBSEND_DONE);
+    //RADIO_ASSERT(msg == &txBeaconMsg_);
 
 #ifdef ORINOCO_DEBUG_STATISTICS
     if (error == SUCCESS) {
@@ -667,8 +671,8 @@ implementation {
 
   /*** DataSubSend *******************************************************/
   event void DataSubSend.sendDone(message_t * msg, error_t error) {
-    RADIO_ASSERT(state_ == FORWARD_SUBSEND_DONE);
-    RADIO_ASSERT(msg == txDataMsg_);
+    //RADIO_ASSERT(state_ == FORWARD_SUBSEND_DONE);
+    //RADIO_ASSERT(msg == txDataMsg_);
 //printf(" sent %u\n", error);
 
     // if the timer should not be running (which may happen if it fired

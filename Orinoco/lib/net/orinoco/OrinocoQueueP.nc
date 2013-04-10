@@ -57,9 +57,6 @@ module OrinocoQueueP {
     interface Packet;
     interface CollectionPacket;
 
-    // packet delay
-    interface PacketDelay<TMilli> as PacketDelayMilli;
-
     // cache comparer for packet history
     interface CacheCompare<mc_entry_t>;
 
@@ -82,11 +79,8 @@ module OrinocoQueueP {
 
     interface Cache<mc_entry_t> as PacketHistory;
 
-    // time stamping
-    interface LocalTime<TRadio> as LocalTimeRadio;
-    interface LocalTime<TMilli> as LocalTimeMilli;
-    interface PacketField<uint8_t> as PacketTimeSyncOffset;
-    interface PacketTimeStamp<TRadio, uint32_t> as PacketTimeStampRadio;
+// TODO this interface or something similar ...
+//    interface PacketDelay<TMilli> as PacketDelayMilli;
 
     // traffic statistics
     interface OrinocoTrafficUpdates as TrafficUpdates;
@@ -272,9 +266,10 @@ implementation {
     for (i = 0; i < ORINOCO_MAX_PATH_RECORD; i++) h->path[i] = 0x00;  // FIXME debug
     h->type   = type;
 
-    // attach time of creation for latency tracking
-    h->timestamp.absolute = call LocalTimeRadio.get();
-    call PacketTimeSyncOffset.set(msg, offsetof(message_t, data) + len + offsetof(orinoco_data_header_t, timestamp.absolute));
+// FIXME multi
+// should be the same could as below
+//    // attach time of creation for latency tracking
+//    call PacketTimeSyncOffset.set(msg, len);
 
     // STEP 3: trigger self-reception (for roots) or sending
     if (call SendQueue.enqueue(qe) == SUCCESS) {
@@ -365,14 +360,17 @@ implementation {
     }
     h->hopCnt++;  // we're one hop away from previous station
 
-    // convert time of creation to locale time for latency tracking
-    // FIXME tweak to get rid of travels back in time (does this work?)
-    if (h->timestamp.relative <= 0) {
-      h->timestamp.absolute = h->timestamp.relative + call PacketTimeStampRadio.timestamp(msg);
-    } else {
-      h->timestamp.absolute = call PacketTimeStampRadio.timestamp(msg);
-    }
-    call PacketTimeSyncOffset.set(msg, offsetof(message_t, data) + len + offsetof(orinoco_data_header_t, timestamp.absolute));
+// TODO multi
+//    // convert time of creation to locale time for latency tracking
+//    // FIXME tweak to get rid of travels back in time (does this work?)
+//    if (h->timestamp.relative <= 0) {
+//      h->timestamp.absolute = h->timestamp.relative + call PacketTimeStampRadio.timestamp(msg);
+//    } else {
+//      h->timestamp.absolute = call PacketTimeStampRadio.timestamp(msg);
+//    }
+// TODO multi
+//    call PacketTimeSyncOffset.set(msg, len);
+//    call PacketTimeSyncOffset.set(msg, offsetof(message_t, data) + len + offsetof(orinoco_data_header_t, timestamp.absolute));
 
     // get packet len for simplified code
     len = call Packet.payloadLength(msg);
@@ -456,27 +454,6 @@ implementation {
 
   command void CollectionPacket.setSequenceNumber(message_t * msg, uint8_t seqno) {
     getHeader(msg)->seqno = seqno;
-  }
-
-
-  /***** PacketDelay *****************************************************/
-  command uint32_t PacketDelayMilli.delay(message_t * msg) {
-    // FIXME does not work on a sink! what about is valid?
-    //return (call PacketTimeStampRadio.timestamp(msg) - getHeader(msg)->timestamp.absolute) >> RADIO_ALARM_MILLI_EXP;
-    return (call PacketTimeStampRadio.timestamp(msg) - getHeader(msg)->timestamp.absolute) >> 10; 
-  }
-
-  command uint32_t PacketDelayMilli.creationTime(message_t * msg) {
-    // TODO what about isValid()?
-    //return getHeader(msg)->timestamp.absolute >> RADIO_ALARM_MILLI_EXP;
-//    return getHeader(msg)->timestamp.absolute >> 10;
-
-    // give time based on actual millis
-    uint32_t  tm, tr;
-    tm = call LocalTimeMilli.get();
-    tr = call LocalTimeRadio.get();
-
-    return tm - ((tr - getHeader(msg)->timestamp.absolute) >> 10);
   }
 
 
