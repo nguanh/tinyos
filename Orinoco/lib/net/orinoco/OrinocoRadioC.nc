@@ -103,5 +103,8 @@ implementation {
   components LedsC;
   //components NoLedsC as LedsC;
   Mac.Leds -> LedsC;
+
+  // dirty hack to enable platform specific setup
+  components OrinocoPlatformModificationsC;
 }
 
