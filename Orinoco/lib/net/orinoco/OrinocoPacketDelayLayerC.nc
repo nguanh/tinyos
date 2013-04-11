@@ -1,6 +1,6 @@
 /* $Id: $ */
 /*
- * Copyright (c) 2011 Hamburg University of Technology (TUHH).
+ * Copyright (c) 2013 University of Luebeck (UzL).
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,34 +29,38 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
- * DAMAGE.
+  DAMAGE.
  */
 
 /**
  * @author Christian Renner
- * @date December 14 2011
+ * @date April 9th 2013
  */
 
-interface PacketDelay<precision_tag> {
-  /**
-   * Initialize packet delay tracking by stamping packet with current time
-   */
-  command void init(message_t * msg);
+configuration OrinocoPacketDelayLayerC {
+  provides {
+    interface AMSend;
+    interface Receive;
+    interface Packet;
+    interface PacketDelay<TMilli> as PacketDelayMilli;
+  }
+  uses {
+    interface AMSend as AMSubSend;
+    interface Receive as SubReceive;
+    interface Packet as SubPacket;
+  }
+}
+implementation {
+  components OrinocoPacketDelayLayerP;
+  AMSend           = OrinocoPacketDelayLayerP;
+  Receive          = OrinocoPacketDelayLayerP;
+  Packet           = OrinocoPacketDelayLayerP;
+  PacketDelayMilli = OrinocoPacketDelayLayerP;
+  AMSubSend        = OrinocoPacketDelayLayerP;
+  SubReceive       = OrinocoPacketDelayLayerP;
+  SubPacket        = OrinocoPacketDelayLayerP;
 
-  /** 
-   * Return the total packet delay, i.e., the time elapsed since
-   * packet creation and the current time
-   *
-   * @return packet delay
-   */
-  command uint32_t delay(message_t * msg);
-
-  /** 
-   * Return the time at which the packet was created (on the origin node)
-   * in locale time
-   *
-   * @return locale time, at which the packet was created at its origin
-   */
-  command uint32_t creationTime(message_t * msg);
+  components LocalTimeMilliC;
+  OrinocoPacketDelayLayerP.LocalTimeMilli -> LocalTimeMilliC;
 }
 

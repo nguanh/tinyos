@@ -62,7 +62,7 @@ implementation {
     call ForwardingControl.start();
 
     // start our packet timer
-    call Timer.startPeriodic(30720);
+    call Timer.startPeriodic(5120);
   }
 
   event void Timer.fired() {

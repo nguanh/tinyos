@@ -102,6 +102,9 @@ typedef nx_struct {
 //  } timestamp;
 } orinoco_data_header_t;
 
+typedef nx_struct {
+  nx_uint32_t ctime;  // time of creation
+} orinoco_delay_footer_t;
 
 /**
  * QUEUE DEFINITIONS and DUPLICATE RECOGNITION
@@ -115,7 +118,7 @@ typedef struct {
 
 /* message queue type and queue size */
 typedef struct {
-  message_t * ONE_NOK msg;
+  message_t * ONE_NOK msg;   // message pointer
 } mq_entry_t;
 
 #ifndef ORINOCO_QUEUE_SIZE

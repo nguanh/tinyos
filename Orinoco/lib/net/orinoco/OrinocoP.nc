@@ -66,7 +66,7 @@ configuration OrinocoP {
     // packet
     interface Packet;
     interface CollectionPacket;
-    interface PacketDelay<TMilli>;
+    interface PacketDelay<TMilli> as PacketDelayMilli;
 
     // make config and traffic statistics available
     interface OrinocoConfig;
@@ -87,14 +87,13 @@ implementation {
   Intercept             = Queue;
   MainC                -> Queue.Init;
 
-  components PacketDelayC;
-  PacketDelay   = PacketDelayC;
-
   components OrinocoRadioC;
+  PacketDelayMilli  = OrinocoRadioC;
   RadioControl      = OrinocoRadioC;
   Queue.SubPacket  -> OrinocoRadioC;
   Queue.SubReceive -> OrinocoRadioC.Receive;
   Queue.SubSend    -> OrinocoRadioC;
+  Queue.PacketDelayMilli -> OrinocoRadioC;
 
   // config
   components OrinocoConfigC;
