@@ -138,6 +138,7 @@ implementation {
       if (accept) {
         // if this beacon is acceptible, store sender id for (immediate) forwarding
         txDataDst_        = call SubAMPacket.source(msg);
+        // store max. backoff (the back-offing is implemented in OrinocoForwardLayer)
         txDataMaxBackoff_ = p->cw;
       }
     }
@@ -266,7 +267,7 @@ implementation {
       if (txDataError_ == SUCCESS) {
         state_ = FORWARD_SUBSEND_DONE;
       } else {
-        state_ = FORWARD_DONE;  // FIXME is this correct? why should we give up, if sending is not possible at the moment?
+        state_ = FORWARD_DONE;  // FIXME is this correct? why should we give up, if sending is not possible at the moment? The question is: will we enable reception in between, so that we cannot block the network?
         post transition();
       }
 
