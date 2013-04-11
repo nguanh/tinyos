@@ -8,30 +8,32 @@ CFLAGS += -DDISABLE_SYNCED_MICRO
 include $(MAKERULES)
 
 CFLAGS += \
-	-I .                  \
-	-I $(TOSDIR)/lib/net  \
-        -I ../../interfaces   \
-        -I ../../lib/net/orinoco  \
-        -I ../../lib/rfxlink/layers  \
+	-I . \
+	-I $(TOSDIR)/lib/net \
+	-I ../../interfaces \
+	-I ../../lib/net/orinoco \
+	-I ../../lib/rfxlink/layers \
 	-I ../../../LocalTimeSyncedMicro/lib \
-        -I ../../../EAJobs/interfaces \
-        -I ../../../EAJobs/lib \
+	-I ../../../EAJobs/interfaces \
+	-I ../../../EAJobs/lib \
 	-I ../../../Tools
 
 ifeq ($(findstring $(PLATFORM),iris), iris)
 CFLAGS += \
-        -I ../../chips/rf230  \
-        -I ../../platforms/iris \
+	-I ../../chips/rf230  \
+	-I ../../platforms/iris \
 	-I ../../../LocalTimeSyncedMicro/chips/atm1281 \
 	-I ../../../LocalTimeSyncedMicro/chips/atm1281/timer
 else ifeq ($(findstring $(PLATFORM),telosb), telosb)
 CFLAGS += \
-        -I ../../chips/cc2420  \
-       	-I ../../platforms/telosb \
+	-I ../../chips/cc2420  \
+	-I ../../platforms/telosb \
 	-I ../../../LocalTimeSyncedMicro/chips/msp430 \
 	-I ../../../LocalTimeSyncedMicro/chips/msp430/timer
+else ifeq ($(PLATFORM),)
+	# No target, no worries.
 else
-$(error SORRY! Platform $(PLATFORM) is not supported)
+$(error Platform "$(PLATFORM)" is not supported)
 endif
 
 LDFLAGS += ../../../Tools/Statistics.c
