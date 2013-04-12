@@ -228,7 +228,7 @@ implementation
     // NOTE must be in this order!
 //    *((nx_uint32_t *)(call RadioPacket.getPayload(msg, len) + len - sizeof(uint32_t))) = call PacketDelayMilli.delay(msg);  // TODO for debugging only
 //    *((nx_uint32_t *)(call RadioPacket.getPayload(msg, len) + len - 2*sizeof(uint32_t))) = call PacketDelayMilli.creationTime(msg);  // TODO for debugging only
-    *((nx_uint32_t *)(call RadioPacket.getPayload(msg, len) + len + sizeof(uint32_t))) = call PacketDelayMilli.delay(msg);  // TODO for debugging only
+    *((nx_uint32_t *)(call RadioPacket.getPayload(msg, len) + len - sizeof(uint32_t))) = call PacketDelayMilli.delay(msg);  // TODO for debugging only
 
     if (call UartSend.send[id](AM_BROADCAST_ADDR, uartQueue[uartOut], len) == SUCCESS) {
       successBlink();

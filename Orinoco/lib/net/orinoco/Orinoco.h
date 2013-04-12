@@ -57,8 +57,10 @@ enum {
   ORINOCO_DFLT_WAKEUP_DEVIATION   =   10,  /* percent */
   ORINOCO_DFLT_CONGESTION_WIN_MIN =    8,  /* ms */
   ORINOCO_DFLT_CONGESTION_WIN_MAX =   32,  /* ms */
-  ORINOCO_ACK_WAITING_TIME        =    2,  /* ms */
-  ORINOCO_DATA_WAITING_TIME       =    4,  /* ms */
+  //ORINOCO_ACK_WAITING_TIME        =    2,  /* ms */
+  //ORINOCO_DATA_WAITING_TIME       =    4,  /* ms */
+  ORINOCO_ACK_WAITING_TIME        =    4,  /* ms */
+  ORINOCO_DATA_WAITING_TIME       =    8,  /* ms */
   ORINOCO_DFLT_NUM_WAITING_INTVL  =    3,  /* multiple, absolute number */
   ORINOCO_DFLT_MIN_QUEUE_LEVEL    =    1,  /* min. number of packets in queue before forwarding */
 };
