@@ -38,6 +38,11 @@
  */
 
 interface PacketDelay<precision_tag> {
+  /**
+   * Initialize packet delay tracking by stamping packet with current time
+   */
+  command void init(message_t * msg);
+
   /** 
    * Return the total packet delay, i.e., the time elapsed since
    * packet creation and the current time

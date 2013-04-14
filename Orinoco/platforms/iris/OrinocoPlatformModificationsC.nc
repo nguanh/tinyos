@@ -37,7 +37,7 @@
  * @date April 9th 2013
  */
 
-configuration OrinocoPlatformSetupC {
+configuration OrinocoPlatformModificationsC {
 }
 implementation {
 }

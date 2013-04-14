@@ -60,6 +60,10 @@ implementation {
 
 
   /***** PacketDelay *****************************************************/
+  async command uint32_t PacketDelayMilli.init(message_t * msg) {
+    //
+  }
+
   // TODO FIXME
   // this is already defined in OrinocoQueueP
   // we should do it differently here ...
@@ -72,7 +76,7 @@ implementation {
 //      + call Packet.payloadLength(msg));
   }
 
-  command uint32_t PacketDelayMilli.delay(message_t * msg) {
+  async command uint32_t PacketDelayMilli.delay(message_t * msg) {
     // FIXME does not work on a sink! what about is valid?
     //return (call PacketTimeStampRadio.timestamp(msg) - getHeader(msg)->timestamp.absolute) >> RADIO_ALARM_MILLI_EXP;
 //    return (call PacketTimeStampRadio.timestamp(msg) - getHeader(msg)->timestamp.absolute) >> 10;
@@ -80,7 +84,7 @@ return 0;
   }
 
 
-  command uint32_t PacketDelayMilli.creationTime(message_t * msg) {
+  async command uint32_t PacketDelayMilli.creationTime(message_t * msg) {
     // TODO what about isValid()?
 
     // give time based on actual millis

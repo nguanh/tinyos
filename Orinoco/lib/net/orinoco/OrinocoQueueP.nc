@@ -79,8 +79,7 @@ module OrinocoQueueP {
 
     interface Cache<mc_entry_t> as PacketHistory;
 
-// TODO this interface or something similar ...
-//    interface PacketDelay<TMilli> as PacketDelayMilli;
+    interface PacketDelay<TMilli> as PacketDelayMilli;
 
     // traffic statistics
     interface OrinocoTrafficUpdates as TrafficUpdates;
@@ -250,7 +249,7 @@ implementation {
     }
 
     // get new entry from message pool and insert into queue
-    qe.msg = call MsgPool.get();
+    qe.msg   = call MsgPool.get();
     // TODO anything else for qe?
     //memcpy(qe.msg, msg, sizeof(message_t));
     *(qe.msg) = *msg;
@@ -270,7 +269,7 @@ implementation {
 // should be the same could as below
 //    // attach time of creation for latency tracking
 //    call PacketTimeSyncOffset.set(msg, len);
-//    call PacketDelay.init();
+    call PacketDelayMilli.init(msg);
 
     // STEP 3: trigger self-reception (for roots) or sending
     if (call SendQueue.enqueue(qe) == SUCCESS) {

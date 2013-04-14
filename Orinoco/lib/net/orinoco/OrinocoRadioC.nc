@@ -52,6 +52,7 @@ configuration OrinocoRadioC {
 //    interface LocalTime<TRadio> as LocalTimeRadio;
 //    interface PacketField<uint8_t> as PacketTimeSyncOffset;
 //    interface PacketTimeStamp<TRadio, uint32_t> as PacketTimeStampRadio;
+    interface PacketDelay<TMilli> as PacketDelayMilli;
   }
   uses {
     interface OrinocoPathCost;
@@ -73,11 +74,11 @@ implementation {
   // why do we use active messages at all?
   components ActiveMessageC as AM;
   Mac.SubControl       -> AM;
-  Mac.SubPacket        -> AM;
+  Mac.SubPacket        -> OrinocoPacketDelayLayerC; // AM;
   Mac.SubAMPacket      -> AM;
   Mac.BeaconSubReceive -> AM.Receive[ORINOCO_AM_BEACON];  // get all beacons (wire twice!)
   Mac.BeaconSubReceive -> AM.Snoop[ORINOCO_AM_BEACON];
-  Mac.DataSubReceive   -> AM.Receive[ORINOCO_AM_DATA];
+  Mac.DataSubReceive   -> OrinocoPacketDelayLayerC; // AM.Receive[ORINOCO_AM_DATA];
   Mac.BeaconSubSend    -> AM.AMSend[ORINOCO_AM_BEACON];
   Mac.DataSubSend      -> OrinocoForwardLayerC; // AM.AMSend[ORINOCO_AM_DATA];
 
@@ -88,8 +89,14 @@ implementation {
 //  PacketTimeStampRadio  = AM;
 
   components OrinocoForwardLayerC;
-  OrinocoForwardLayerC.SubSendData -> AM.AMSend[ORINOCO_AM_DATA];
+  OrinocoForwardLayerC.SubSendData -> OrinocoPacketDelayLayerC; // AM.AMSend[ORINOCO_AM_DATA];
   OrinocoForwardLayerC.Config      -> Mac;
+
+  components OrinocoPacketDelayLayerC;
+  PacketDelayMilli = OrinocoPacketDelayLayerC;
+  OrinocoPacketDelayLayerC.AMSubSend  -> AM.AMSend[ORINOCO_AM_DATA];
+  OrinocoPacketDelayLayerC.SubReceive -> AM.Receive[ORINOCO_AM_DATA];
+  OrinocoPacketDelayLayerC.SubPacket  -> AM;
 
   components new TimerMilliC() as Timer;
   Mac.Timer -> Timer;

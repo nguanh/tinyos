@@ -1,6 +1,6 @@
 /* $Id: $ */
 /*
- * Copyright (c) 2011 Hamburg University of Technology (TUHH).
+ * Copyright (c) 2013 University of Luebeck (UzL).
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,64 +29,38 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
- * DAMAGE.
+  DAMAGE.
  */
 
 /**
  * @author Christian Renner
- * @date December 14 2011
+ * @date April 9th 2013
  */
 
-module TestC {
-  uses {
-    interface Boot;
-    interface Timer<TMilli>;
-    interface SplitControl as RadioControl;
-    interface StdControl as ForwardingControl;
-    interface RootControl;
+configuration OrinocoPacketDelayLayerC {
+  provides {
+    interface AMSend;
+    interface Receive;
     interface Packet;
-    interface QueueSend as Send;
+    interface PacketDelay<TMilli> as PacketDelayMilli;
+  }
+  uses {
+    interface AMSend as AMSubSend;
+    interface Receive as SubReceive;
+    interface Packet as SubPacket;
   }
 }
 implementation {
-  #define MSG_BURST_LEN  3
-  message_t  myMsg;
-  uint16_t  cnt = 0;
+  components OrinocoPacketDelayLayerP;
+  AMSend           = OrinocoPacketDelayLayerP;
+  Receive          = OrinocoPacketDelayLayerP;
+  Packet           = OrinocoPacketDelayLayerP;
+  PacketDelayMilli = OrinocoPacketDelayLayerP;
+  AMSubSend        = OrinocoPacketDelayLayerP;
+  SubReceive       = OrinocoPacketDelayLayerP;
+  SubPacket        = OrinocoPacketDelayLayerP;
 
-  event void Boot.booted() {
-    // we're no root, just make sure
-    call RootControl.unsetRoot();  // make this node a root
-
-    // switch on radio and enable routing
-    call RadioControl.start();
-    call ForwardingControl.start();
-
-    // start our packet timer
-    call Timer.startPeriodic(5120);
-  }
-
-  event void Timer.fired() {
-    uint8_t  msgCnt;
-
-    for (msgCnt = 0; msgCnt < MSG_BURST_LEN; msgCnt++) {
-      nx_uint16_t * d;
-
-      // prepare message
-      call Packet.clear(&myMsg);
-      
-      d = call Packet.getPayload(&myMsg, 30);
-      *d = cnt++;
-
-      // and send it
-      call Send.send(&myMsg, 30);
-    }
-  }
-
-  event void RadioControl.startDone(error_t error) {
-    // nothing
-  }
-
-  event void RadioControl.stopDone(error_t error) {
-    // nothing
-  }
+  components LocalTimeMilliC;
+  OrinocoPacketDelayLayerP.LocalTimeMilli -> LocalTimeMilliC;
 }
+

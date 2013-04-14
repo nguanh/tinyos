@@ -217,7 +217,8 @@ implementation
     }
 
     msg = uartQueue[uartOut];
-    len = call RadioPacket.payloadLength(msg) + sizeof(orinoco_data_header_t) + sizeof(uint32_t);  // TODO for debugging only
+    //len = call RadioPacket.payloadLength(msg) + sizeof(orinoco_data_header_t) + sizeof(uint32_t);  // TODO for debugging only
+    len = call RadioPacket.payloadLength(msg) + sizeof(orinoco_data_header_t) + 2*sizeof(uint32_t);  // TODO for debugging only
     id  = call CollectionPacket.getType(msg);
     src = call CollectionPacket.getOrigin(msg);
     call UartPacket.clear(msg);
@@ -225,8 +226,9 @@ implementation
     //call UartAMPacket.setDestination(msg, (numFail << 8) + numDrop);
 
     // NOTE must be in this order!
+//    *((nx_uint32_t *)(call RadioPacket.getPayload(msg, len) + len - sizeof(uint32_t))) = call PacketDelayMilli.delay(msg);  // TODO for debugging only
+//    *((nx_uint32_t *)(call RadioPacket.getPayload(msg, len) + len - 2*sizeof(uint32_t))) = call PacketDelayMilli.creationTime(msg);  // TODO for debugging only
     *((nx_uint32_t *)(call RadioPacket.getPayload(msg, len) + len - sizeof(uint32_t))) = call PacketDelayMilli.delay(msg);  // TODO for debugging only
-    *((nx_uint32_t *)(call RadioPacket.getPayload(msg, len) + len - 2*sizeof(uint32_t))) = call PacketDelayMilli.creationTime(msg);  // TODO for debugging only
 
     if (call UartSend.send[id](AM_BROADCAST_ADDR, uartQueue[uartOut], len) == SUCCESS) {
       successBlink();
