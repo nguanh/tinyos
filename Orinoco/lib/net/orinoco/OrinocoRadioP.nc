@@ -21,7 +21,7 @@
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
- * MASSACHUSETTS INSITIUTE OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
+ * HAMBURG UNIVERSITY OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
  * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
@@ -40,6 +40,7 @@
 //#include <RadioAssert.h>
 #include "OrinocoBeaconMsg.h"
 #include "Orinoco.h"
+#include "OrinocoPlatform.h"
 #include "Statistics.h"
 
 module OrinocoRadioP {
@@ -212,6 +213,7 @@ implementation {
 
       if (error == SUCCESS) {
         state_++;             // ok -> next state
+call Leds.set(state_ >> 0);
       } else {
         post transition();    // error -> retry (keep state, repost this task)
       }
@@ -223,6 +225,7 @@ implementation {
     
       if (error == SUCCESS) {
         state_++;             // ok -> next state
+call Leds.set(state_ >> 0);
       } else {
         post transition();    // error -> retry (keep state, repost this task)
       }
@@ -234,23 +237,27 @@ implementation {
 
       // TODO what about the init phase?
       state_ = RECEIVE_SUBSTART;
+call Leds.set(state_ >> 0);
       post transition();
       signal SplitControl.startDone(SUCCESS);
 
     // switched off
     } else if (state_ == OFF_STOP) {
       state_ = OFF;
+call Leds.set(state_ >> 0);
       signal SplitControl.stopDone(SUCCESS);
 
     // start sleep timer and proceed to sleep state
     } else if (state_ == SLEEP_TIMER) {
       call Timer.startOneShot(getRandomSleepTime());
       state_ = SLEEP;
+call Leds.set(state_ >> 0);
 
     // start timer to limit waiting time
     } else if (state_ == FORWARD_TIMER) {
       call Timer.startOneShot(getMaxWaitingTime());
       state_ = FORWARD;
+call Leds.set(state_ >> 0);
 
       call TrafficUpdates.updateForwardDelay(TRUE);
 
@@ -258,6 +265,7 @@ implementation {
     } else if (state_ == RECEIVE_TIMER) {
       call Timer.startOneShot(curCongestionWin_ + ORINOCO_DATA_WAITING_TIME);
       state_ = RECEIVE;
+call Leds.set(state_ >> 0);
 
     // shall send current packet
     } else if (state_ == FORWARD_SUBSEND) {
@@ -266,8 +274,10 @@ implementation {
 
       if (txDataError_ == SUCCESS) {
         state_ = FORWARD_SUBSEND_DONE;
+call Leds.set(state_ >> 0);
       } else {
         state_ = FORWARD_DONE;  // FIXME is this correct? why should we give up, if sending is not possible at the moment? The question is: will we enable reception in between, so that we cannot block the network?
+call Leds.set(state_ >> 0);
         post transition();
       }
 
@@ -277,8 +287,10 @@ implementation {
 
       if (error == SUCCESS) {
         state_ = RECEIVE_SUBSEND_DONE;
+call Leds.set(state_ >> 0);
       } else {
         state_ = RECEIVE_DONE;
+call Leds.set(state_ >> 0);
         post transition();
       }
 
@@ -286,6 +298,7 @@ implementation {
     } else if (state_ == FORWARD_DONE) {
       // TODO check: is anything else handled before?
       state_ = SLEEP_SUBSTOP;
+call Leds.set(state_ >> 0);
       post transition();
 
       // TODO is this the only place?
@@ -306,6 +319,7 @@ implementation {
 
       // e.g., could the timer still be running and should be canceled?
       state_ = SLEEP_SUBSTOP;
+call Leds.set(state_ >> 0);
       post transition();
 
     }
@@ -321,6 +335,7 @@ implementation {
       // synchronous, i.e., startDone must not be called before start
       // has returned
       state_ = OFF_START;
+call Leds.set(state_ >> 0);
       post transition();
       return SUCCESS;
     // 2.) starting has just completed (we're busy then?)
@@ -362,26 +377,32 @@ implementation {
     // shall start reception or forwarding, but radio is not on yet -> off
     } else if (state_ == RECEIVE_SUBSTART || state_ == FORWARD_SUBSTART) {
       state_ = OFF_STOP;
+call Leds.set(state_ >> 0);
 
     // reception must not be interrupted before its end!
     } else if (state_ == RECEIVE_DONE) {
       state_ = OFF_SUBSTOP;
+call Leds.set(state_ >> 0);
 
     // waiting to forward data or switching of hardware to sleep
     } else if (state_ == FORWARD_TIMER || state_ == FORWARD || state_ == SLEEP_SUBSTOP) {
       state_ = OFF_SUBSTOP;
+call Leds.set(state_ >> 0);
 
     // forwarding completed -> switch off
     } else if (state_ == FORWARD_DONE) {
       state_ == OFF_SUBSTOP;
+call Leds.set(state_ >> 0);
 
     // waiting for stopDone (to sleep) -> change to corresponding off step
     } else if (state_ == SLEEP_SUBSTOP_DONE) {
       state_ = OFF_SUBSTOP_DONE;
+call Leds.set(state_ >> 0);
 
     // sleeping -> directly off
     } else if (state_ == SLEEP || state_ == SLEEP_TIMER) {
       state_ = OFF_STOP;
+call Leds.set(state_ >> 0);
 
     // in any other case, it's a little tricky to shut down, so we
     // 'pretend' to be busy (telling the user to retry later)
@@ -424,10 +445,12 @@ implementation {
     //RADIO_ASSERT(state_ == FORWARD_SUBSTART_DONE || state_ == RECEIVE_SUBSTART_DONE);
 
     if (error == SUCCESS) {
-      call Leds.led0On();
+      //call Leds.led0On();
       state_++;  // fine -> next state
+call Leds.set(state_ >> 0);
     } else {
       state_--;  // retry
+call Leds.set(state_ >> 0);
     }
 
     post transition();
@@ -439,10 +462,12 @@ implementation {
     //RADIO_ASSERT(state_ == OFF_SUBSTOP_DONE || state_ == SLEEP_SUBSTOP_DONE);
 
     if (error == SUCCESS) {
-      call Leds.led0Off();
+      //call Leds.led0Off();
       state_++;  // fine -> next state
+call Leds.set(state_ >> 0);
     } else {
       state_--;  // retry
+call Leds.set(state_ >> 0);
     }
 
     post transition();
@@ -473,12 +498,15 @@ implementation {
         // only try receiving, if path metric is known (i.e., is not infinite)
         if (call PathCost.getCost() == ORINOCO_PATHCOST_INF) {
           state_ = SLEEP_TIMER;
+call Leds.set(state_ >> 0);
         } else {
           state_ = RECEIVE_SUBSTART;
+call Leds.set(state_ >> 0);
         }
       } else {
         // FIXME when may this happen at all?
         state_ = FORWARD_SUBSTART;
+call Leds.set(state_ >> 0);
       }
 
     // node is in forwarding state and we get a timeout (no beacon or beacon and no ack)
@@ -506,19 +534,24 @@ implementation {
         // NOTE what about resetting the waiting time?
         if (TRUE == signal Orinoco.sleepAfterForwardError()) {
           state_ = SLEEP_TIMER;
+call Leds.set(state_ >> 0);
         } else {
           state_ = FORWARD_TIMER;
+call Leds.set(state_ >> 0);
         }
         */
         state_ = FORWARD_TIMER;
+call Leds.set(state_ >> 0);
       } else {
         state_ = FORWARD_TIMER;
+call Leds.set(state_ >> 0);
       }
 
     // node is in received state but no data came in
     } else if (state_ == RECEIVE) {
       dbg("receive timeout\n");
       state_ = RECEIVE_DONE;
+call Leds.set(state_ >> 0);
     }
 
     post transition();
@@ -530,7 +563,7 @@ implementation {
   event message_t * BeaconSubReceive.receive(message_t * msg, void *, uint8_t) {
 
     // when receiving a beacon, ignore any other case than FORWARD
-    // particularly do not update parent when a data packet has been already sent (ack pending)
+    // particularly do not update parent when a data packet has already been sent (ack pending)
     // schedules (back-offs may be different, resulting in timeout at receiver/parent)
     if (state_ == FORWARD) {
       bool isAck = FALSE;
@@ -564,12 +597,14 @@ implementation {
           call Timer.startOneShot(call Timer.getdt());
         }
         state_ = FORWARD_SUBSEND;  // only send packet
+call Leds.set(state_ >> 0);
         post transition();
       } else {
         // forwarding is complete, if no packet is left
         if (txDataMsg_ == NULL) {
           call Timer.stop();
           state_ = FORWARD_DONE;  // nothing
+call Leds.set(state_ >> 0);
           post transition();
         }
       }
@@ -585,10 +620,12 @@ implementation {
           // we did not send yet (which is very unlikely), process beacon and resend or sit back
           if (processBeacon(msg, FALSE)) {  // TODO when should this fail at all?
             state_ = FORWARD_SUBSEND;
+call Leds.set(state_ >> 0);
             post transition();
           } else {
             state_ = FORWARD;
           }
+call Leds.set(state_ >> 0);
         } else {
           // our packet is already in a lower layer; we must cancel and wait for sendDone
           if (SUCCESS == call DataSubSend.cancel(txDataMsg_)) {
@@ -614,6 +651,7 @@ implementation {
       txBeaconDst_   = call SubAMPacket.source(msg);  // store sender of data for beacon ack
 
       state_ = RECEIVE_SUBSEND;                  // and send another beacon
+call Leds.set(state_ >> 0);
       post transition();
 
 #ifdef ORINOCO_DEBUG_STATISTICS
@@ -662,8 +700,10 @@ implementation {
     if (error == SUCCESS) {
       //call Leds.led2Toggle();  // TODO remove
       state_++;   // ok -> next state
+call Leds.set(state_ >> 0);
     } else {
-      state_ = SLEEP_SUBSTOP;  // could not send beacon, abort TODO check
+      state_ = SLEEP_SUBSTOP;  // could not send beacon, abort
+call Leds.set(state_ >> 0);
     }
 
     post transition();
@@ -702,12 +742,15 @@ implementation {
       if (beaconCancel_ == TRUE) {
         beaconCancel_ = FALSE,
         state_ = FORWARD_SUBSEND;
+call Leds.set(state_ >> 0);
         post transition();
       } else {
         state_ = FORWARD;   // sit there and wait again
+call Leds.set(state_ >> 0);
       }
     } else {
       state_ = FORWARD;   // sit there and wait again
+call Leds.set(state_ >> 0);
     }
   }
 
@@ -747,10 +790,12 @@ implementation {
         state_ == RECEIVE_SUBSTART)
     {
       state_ = FORWARD_SUBSTART;
+call Leds.set(state_ >> 0);
       //post transition();  // NOTE should be already pending
 
     } else if (state_ == RECEIVE_SUBSTART_DONE) {
       state_ = FORWARD_SUBSTART_DONE;
+call Leds.set(state_ >> 0);
 
     } else if (
       state_ == RECEIVE_DONE ||   // nothing to receive (radio is still on)
@@ -759,6 +804,7 @@ implementation {
     {
       // => directly set forwarding timer
       state_ = FORWARD_TIMER;
+call Leds.set(state_ >> 0);
     }
 
     // SLEEP_SUBSTOP_DONE is not handled here, since:

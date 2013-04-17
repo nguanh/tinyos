@@ -21,7 +21,7 @@
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
- * MASSACHUSETTS INSITIUTE OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
+ * HAMBURG UNIVERSITY OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
  * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
@@ -39,20 +39,20 @@
 
 module RF230SlimRadioP {
   provides {
-    interface LinkPacketMetadata;
+//    interface LinkPacketMetadata;
     interface RF230DriverConfig;
   }
-  uses {
-    interface PacketField<uint8_t> as PacketRSSI;
-    interface PacketField<uint8_t> as PacketLinkQuality;
-  }
+//  uses {
+//    interface PacketField<uint8_t> as PacketRSSI;
+//    interface PacketField<uint8_t> as PacketLinkQuality;
+//  }
 }
 implementation {
 
-  /*** LinkPacketMetadata ************************************************/
-  async command bool LinkPacketMetadata.highChannelQuality(message_t * msg) {
-    return call PacketRSSI.get(msg) >= ORINOCO_MIN_RSSI;
-  }
+//  /*** LinkPacketMetadata ************************************************/
+//  async command bool LinkPacketMetadata.highChannelQuality(message_t * msg) {
+//    return call PacketRSSI.get(msg) >= ORINOCO_MIN_RSSI;
+//  }
 
 
   /*** RF230DriverConfig *************************************************/

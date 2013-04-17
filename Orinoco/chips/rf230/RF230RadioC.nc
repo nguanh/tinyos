@@ -300,11 +300,11 @@ implementation
 //CR#else
 	components RF230DriverLayerC as RadioDriverLayerC;
 //CR#endif
-        //components RF230SlimRadioC;
+        components RF230SlimRadioC;
 	// TODO reverted this change to simplify setup; we have to see whether
-	// the CCA check inferes with Orinoco ...
-	//RadioDriverLayerC.Config -> RF230SlimRadioC; //CR RadioP;
-	RadioDriverLayerC.Config -> RadioP;
+	// the CCA check interferes with Orinoco ...
+	RadioDriverLayerC.Config -> RF230SlimRadioC; //CR RadioP;
+	//RadioDriverLayerC.Config -> RadioP;
 	RadioDriverLayerC.PacketTimeStamp -> TimeStampingLayerC;
 	PacketTransmitPower = RadioDriverLayerC.PacketTransmitPower;
 	PacketLinkQuality = RadioDriverLayerC.PacketLinkQuality;
