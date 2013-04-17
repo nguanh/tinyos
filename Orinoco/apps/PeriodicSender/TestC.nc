@@ -74,11 +74,11 @@ implementation {
       // prepare message
       call Packet.clear(&myMsg);
       
-      d = call Packet.getPayload(&myMsg, 30);
+      d = call Packet.getPayload(&myMsg, 40);//call Packet.maxPayloadLength() - 12);
       *d = cnt++;
 
       // and send it
-      call Send.send(&myMsg, 30);
+      call Send.send(&myMsg, 40);//call Packet.maxPayloadLength() - 12);
     }
   }
 

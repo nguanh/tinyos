@@ -48,7 +48,7 @@ enum {
   ORINOCO_DFLT_CONGESTION_WIN_MIN =    8,  /* ms */
   ORINOCO_DFLT_CONGESTION_WIN_MAX =   32,  /* ms */
   ORINOCO_ACK_WAITING_TIME        =    2,  /* ms */
-  ORINOCO_DATA_WAITING_TIME       =    4,  /* ms */
+  ORINOCO_DATA_WAITING_TIME       =    6,  /* ms */
 };
 
 /* platform/radio spec. LIMITS for wake-up config */
