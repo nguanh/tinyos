@@ -21,7 +21,7 @@
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
- * MASSACHUSETTS INSITIUTE OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
+ * COPYRIGHT HOLDER OR ITS CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
  * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
@@ -58,7 +58,7 @@ implementation {
   message_t	myMsg;
   uint16_t	cnt = 0;
   uint8_t	sensor_no;
-  Entry* 	entry;
+  Entry 	entry;
   
   /* ************************* INIT ************************* */
   
@@ -68,9 +68,9 @@ implementation {
     call RadioControl.start();		// switch on radio
     call ForwardingControl.start();	// enable routing
 
-    entry->counter = 0;				// Start sampling with sequence number 0
-    entry->signature[0] = 0x41; entry->signature[1] = 0x48;	// debug 
-    entry->signature[2] = 0x48; entry->signature[3] = 0x4E; // debug
+    entry.counter = 0;				// Start sampling with sequence number 0
+    entry.signature[0] = 0x41; entry.signature[1] = 0x48;	// debug 
+    entry.signature[2] = 0x48; entry.signature[3] = 0x4E; // debug
         
     call PollTimer.startPeriodic(SENSOR_POLL_INTV);	// start our polling timer
     call SendTimer.startPeriodic(SENSOR_SEND_INTV);	// start our sending timer
@@ -90,7 +90,7 @@ implementation {
   task void sample() {
     if (sensor_no < uniqueCount(UNIQUEID)) {
       if (call Read.read[sensor_no]() != SUCCESS) {
-        entry->values[sensor_no] = INVALID_SAMPLE_VALUE;
+        entry.values[sensor_no] = INVALID_SAMPLE_VALUE;
         sensor_no++;
         post sample();   // Samples the next sensor
       } else {
@@ -103,21 +103,21 @@ implementation {
 
   // Store collected sensor data  
   event void Read.readDone[uint8_t id](error_t error, uint16_t val) {
-    entry->values[sensor_no] = (error == SUCCESS) ? val : INVALID_SAMPLE_VALUE;
+    entry.values[sensor_no] = (error == SUCCESS) ? val : INVALID_SAMPLE_VALUE;
     sensor_no++;
     post sample();   // Sample the next sensor
   }
 
   event void PollTimer.fired() {
     sensor_no = 0;
-    entry->counter++;
+    entry.counter++;
     post sample();
   }
   
   /* ************************* TIMERS ************************* */
   
   event void SendTimer.fired() {
-    uint8_t  msgCnt;
+    //uint8_t  msgCnt;
     nx_uint16_t* payload;
 
     // Prepare packet payload
@@ -126,7 +126,7 @@ implementation {
     
     // We must copy the data because both tasks run in an asynchroneous fashion
     atomic {
-      memcpy(payload, entry, ENTRY_SIZE);
+      memcpy(payload, &entry, ENTRY_SIZE);
     }
     
     // and send it
