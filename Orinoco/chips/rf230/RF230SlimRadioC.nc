@@ -21,7 +21,7 @@
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
- * MASSACHUSETTS INSITIUTE OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
+ * HAMBURG UNIVERSITY OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
  * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
@@ -39,17 +39,17 @@
 
 configuration RF230SlimRadioC {
   provides {
-    interface LinkPacketMetadata;
+//    interface LinkPacketMetadata;
     interface RF230DriverConfig;
   }
 }
 implementation {
   components RF230SlimRadioP;
-  LinkPacketMetadata = RF230SlimRadioP;
+//  LinkPacketMetadata = RF230SlimRadioP;
   RF230DriverConfig  = RF230SlimRadioP;
 
-  components RF230DriverLayerC;
-  RF230SlimRadioP.PacketRSSI        -> RF230DriverLayerC.PacketRSSI;
-  RF230SlimRadioP.PacketLinkQuality -> RF230DriverLayerC.PacketLinkQuality;
+//  components RF230DriverLayerC;
+//  RF230SlimRadioP.PacketRSSI        -> RF230DriverLayerC.PacketRSSI;
+//  RF230SlimRadioP.PacketLinkQuality -> RF230DriverLayerC.PacketLinkQuality;
 }
 

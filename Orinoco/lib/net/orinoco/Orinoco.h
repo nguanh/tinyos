@@ -21,7 +21,7 @@
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
- * MASSACHUSETTS INSITIUTE OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
+ * HAMBURG UNIVERSITY OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
  * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
@@ -39,10 +39,12 @@
  * @date December 13 2011
  */
 
+
 #ifndef ORINOCO_H
 #define ORINOCO_H
 
 #include <message.h>
+#include <OrinocoPlatform.h>
 //#include <TimeSyncMessageLayer.h>
 
 /* AM packet types */
@@ -55,21 +57,8 @@ enum {
 enum {
   ORINOCO_DFLT_WAKEUP_INTERVAL    =  512,  /* ms */
   ORINOCO_DFLT_WAKEUP_DEVIATION   =   10,  /* percent */
-  ORINOCO_DFLT_CONGESTION_WIN_MIN =    8,  /* ms */
-  ORINOCO_DFLT_CONGESTION_WIN_MAX =   32,  /* ms */
-  //ORINOCO_ACK_WAITING_TIME        =    2,  /* ms */
-  //ORINOCO_DATA_WAITING_TIME       =    4,  /* ms */
-  // TODO check whether these are fine for IRIS as well!
-  ORINOCO_ACK_WAITING_TIME        =    4,  /* ms */
-  ORINOCO_DATA_WAITING_TIME       =    8,  /* ms */
   ORINOCO_DFLT_NUM_WAITING_INTVL  =    3,  /* multiple, absolute number */
   ORINOCO_DFLT_MIN_QUEUE_LEVEL    =    1,  /* min. number of packets in queue before forwarding */
-};
-
-/* LIMITS for wake-up config */
-enum {
-  ORINOCO_WAKEUP_INTERVAL_MIN =   128,  /* ms */
-  ORINOCO_WAKEUP_INTERVAL_MAX =  5120,  /* ms */
 };
 
 /* collection data types */

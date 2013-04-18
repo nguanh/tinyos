@@ -31,7 +31,7 @@
  *
  * Author: Miklos Maroti
  */
-
+x
 generic configuration SoftwareAckLayerC()
 {
 	provides

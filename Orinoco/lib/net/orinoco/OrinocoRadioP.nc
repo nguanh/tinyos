@@ -21,7 +21,7 @@
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
- * MASSACHUSETTS INSITIUTE OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
+ * HAMBURG UNIVERSITY OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
  * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
@@ -40,6 +40,7 @@
 //#include <RadioAssert.h>
 #include "OrinocoBeaconMsg.h"
 #include "Orinoco.h"
+#include "OrinocoPlatform.h"
 #include "Statistics.h"
 
 module OrinocoRadioP {
@@ -307,7 +308,6 @@ implementation {
       // e.g., could the timer still be running and should be canceled?
       state_ = SLEEP_SUBSTOP;
       post transition();
-
     }
   }
 
@@ -530,7 +530,7 @@ implementation {
   event message_t * BeaconSubReceive.receive(message_t * msg, void *, uint8_t) {
 
     // when receiving a beacon, ignore any other case than FORWARD
-    // particularly do not update parent when a data packet has been already sent (ack pending)
+    // particularly do not update parent when a data packet has already been sent (ack pending)
     // schedules (back-offs may be different, resulting in timeout at receiver/parent)
     if (state_ == FORWARD) {
       bool isAck = FALSE;
@@ -663,7 +663,7 @@ implementation {
       //call Leds.led2Toggle();  // TODO remove
       state_++;   // ok -> next state
     } else {
-      state_ = SLEEP_SUBSTOP;  // could not send beacon, abort TODO check
+      state_ = SLEEP_SUBSTOP;  // could not send beacon, abort
     }
 
     post transition();

@@ -21,7 +21,7 @@
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
- * MASSACHUSETTS INSITIUTE OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
+ * HAMBURG UNIVERSITY OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
  * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
@@ -74,11 +74,11 @@ implementation {
       // prepare message
       call Packet.clear(&myMsg);
       
-      d = call Packet.getPayload(&myMsg, 30);
+      d = call Packet.getPayload(&myMsg, 40);//call Packet.maxPayloadLength() - 12);
       *d = cnt++;
 
       // and send it
-      call Send.send(&myMsg, 30);
+      call Send.send(&myMsg, 40);//call Packet.maxPayloadLength() - 12);
     }
   }
 
