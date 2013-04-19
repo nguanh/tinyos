@@ -223,6 +223,7 @@ implementation
     src = call CollectionPacket.getOrigin(msg);
     call UartPacket.clear(msg);
     call UartAMPacket.setSource(msg, src);
+    call UartAMPacket.setDestination(msg, TOS_NODE_ID);
     //call UartAMPacket.setDestination(msg, (numFail << 8) + numDrop);
 
     // NOTE must be in this order!

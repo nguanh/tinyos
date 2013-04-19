@@ -12,7 +12,7 @@ function hex2dec(h,i,x,v){
 function orinoco(s) {
   # AM header info are 8 byte
   # length is stored in sixth byte
-  # orinoco currently used 20 extra bytes at packet's end
+  # orinoco currently uses 20 extra bytes at packet's end
   s = 1 + 8 + hex2dec($6) - 20;
 
   # orinoco
