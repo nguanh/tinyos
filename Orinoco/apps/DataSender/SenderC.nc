@@ -69,8 +69,7 @@ implementation {
     call ForwardingControl.start();	// enable routing
 
     entry.counter = 0;				// Start sampling with sequence number 0
-    entry.signature[0] = 0x41; entry.signature[1] = 0x48;	// debug 
-    entry.signature[2] = 0x48; entry.signature[3] = 0x4E; // debug
+    entry.flags = 0x23;				// Hash symbol
         
     call PollTimer.startPeriodic(SENSOR_POLL_INTV);	// start our polling timer
     call SendTimer.startPeriodic(SENSOR_SEND_INTV);	// start our sending timer
@@ -97,6 +96,7 @@ implementation {
         /* Read is asynchronous - let's wait for readDone to be called */
       }
     } else {
+      call Leds.led1Off();
       /* Reading done - as TX is asynchronous, we just sit and wait now */
     }
   }
@@ -111,13 +111,13 @@ implementation {
   event void PollTimer.fired() {
     sensor_no = 0;
     entry.counter++;
+    call Leds.led1On();
     post sample();
   }
   
   /* ************************* TIMERS ************************* */
   
   event void SendTimer.fired() {
-    //uint8_t  msgCnt;
     nx_uint16_t* payload;
 
     // Prepare packet payload

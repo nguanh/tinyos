@@ -20,7 +20,7 @@
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
- * MASSACHUSETTS INSITIUTE OF TECHNOLOGY OR ITS CONTRIBUTORS BE LIABLE
+ * COPYRIGHT HOLDER OR ITS CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
  * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
@@ -44,7 +44,7 @@
 #define UNIQUEID "Once a jolly swagman camped by a billabong"
 
 // Interval definitions
-#define SENSOR_POLL_INTV 1024
+#define SENSOR_POLL_INTV 2024
 #define SENSOR_SEND_INTV 5000
 
 // Get some timer-independent sleep
@@ -60,7 +60,7 @@ static void __inline__ usleep(register uint16_t n) {
 
 // Define how data are stored (NX types to keep this TX-able)
 typedef nx_struct Entry {
-  nx_uint8_t  signature[4];
+  nx_uint8_t  flags;
   nx_uint32_t counter;
   nx_uint16_t values[uniqueCount(UNIQUEID)];
 } Entry;
