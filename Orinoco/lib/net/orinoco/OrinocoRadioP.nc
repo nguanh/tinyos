@@ -557,6 +557,8 @@ implementation {
       // check whether to accept forwarding offer, if there is any packet.
       // order of this expression is intended (and required), since
       // processBeacon() will adapt the local weight (if possible)
+      // TODO why do we care for the result of processBeacon at all?
+      // -> it's an ack, so we were able to transmit before, why not continue anyway?
       if (processBeacon(msg, isAck) && txDataMsg_ != NULL) {
         // reset timer only if beacon was an ack
         if (isAck) {
