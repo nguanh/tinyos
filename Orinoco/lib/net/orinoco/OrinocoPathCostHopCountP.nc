@@ -60,18 +60,20 @@ implementation {
   // we could not accept any neighbor with acceptable cost,
   // so we're probably too picky. Adapt local cost to best offer
   command void OrinocoPathCost.reviseCost() {
-    // there is a neighbor => slowly adapt
-    // TODO check, if this is sound 
+    // NOTE in sparse networks, the following code is prone to
+    // routing loops, frequently leading to packets being sent back
+    // to where they are coming from
+    //curCost_ = altCost_;
+
+    // we hence slowly adapt, if there is a neighbor
     if (altCost_ != ORINOCO_PATHCOST_INF && curCost_ != ORINOCO_PATHCOST_INF) {
       curCost_ = (curCost_ + altCost_ + 1) / 2;
     } else {
       curCost_ = ORINOCO_PATHCOST_INF;
     }
-    // NOTE in sparse networks, the following code is prone to
-    // routing loops, frequently leading to packets being sent back
-    // to where they are coming from
-    //curCost_ = altCost_;
-    //altCost_ = ORINOCO_PATHCOST_INF;
+
+    // and reset alternative cost
+    altCost_ = ORINOCO_PATHCOST_INF;
   }
 
   // check whether to accept a beacon offer
