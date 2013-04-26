@@ -49,4 +49,7 @@ implementation {
   components OrinocoPathCostHopCountP;
   OrinocoPathCost = OrinocoPathCostHopCountP;
   RootControl     = OrinocoPathCostHopCountP;
+
+  components ActiveMessageC as AM;
+  OrinocoPathCostHopCountP.LinkPacketMetadata -> AM;
 }

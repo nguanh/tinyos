@@ -38,10 +38,8 @@
  */
 
 #include "Orinoco.h"
+#include "Timer.h"
 
-// TODO FIXME
-// check whether these are IRIS specific or valid for other platforms as well!
-// compatibility check
 #ifdef PACKET_LINK
 #	error Please deactivate PACKET_LINK
 #endif

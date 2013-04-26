@@ -132,7 +132,8 @@ implementation {
     // TODO this could be encapsulated by a stand-alone module to enable
     // different implementations
     //if (call PacketRSSI.get(msg) >= ORINOCO_MIN_RSSI) {
-    if (call LinkPacketMetadata.highChannelQuality(msg) || call PathCost.getCost() == ORINOCO_PATHCOST_INF) {
+    // FIXME experimental
+    if (TRUE) { //call LinkPacketMetadata.highChannelQuality(msg) || call PathCost.getCost() == ORINOCO_PATHCOST_INF) {
       OrinocoBeaconMsg * p = (OrinocoBeaconMsg *)call SubPacket.getPayload(msg, sizeof(OrinocoBeaconMsg *));
 
       accept = call PathCost.inspectBeacon(msg, p->cost, update);

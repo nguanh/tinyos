@@ -9,14 +9,14 @@ include $(MAKERULES)
 
 CFLAGS += \
 	-I . \
-	-I $(TOSDIR)/lib/net \
 	-I ../../interfaces \
 	-I ../../lib/net/orinoco \
 	-I ../../lib/rfxlink/layers \
 	-I ../../../LocalTimeSyncedMicro/lib \
 	-I ../../../EAJobs/interfaces \
 	-I ../../../EAJobs/lib \
-	-I ../../../Tools
+	-I ../../../Tools \
+	-I $(TOSDIR)/lib/net \
 
 ifeq ($(findstring $(PLATFORM),iris), iris)
 CFLAGS += \
