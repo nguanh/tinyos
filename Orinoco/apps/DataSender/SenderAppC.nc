@@ -60,7 +60,7 @@ implementation {
   MainProgram.SendTimer         -> SendTimer;
   MainProgram.RadioControl      -> OrinocoP;
   MainProgram.ForwardingControl -> OrinocoP;
-  MainProgram.Send              -> OrinocoP.Send[13];  // some arbitrary number
+  MainProgram.Send              -> OrinocoP.Send;
   MainProgram.RootControl       -> OrinocoP;
   MainProgram.Packet            -> OrinocoP;
   MainProgram.Leds				-> LedsC;
@@ -70,4 +70,13 @@ implementation {
   MainProgram.Read[unique(UNIQUEID)] -> PhotoTsr;
   MainProgram.Read[unique(UNIQUEID)] -> PhotoPar;
   MainProgram.Read[unique(UNIQUEID)] -> InternalVoltage;
- }
+
+  // Orinoco internal reporting
+  components OrinocoStatsReportingJobC;
+  OrinocoStatsReportingJobC.Packet     -> OrinocoP;
+  MainProgram.OrinocoStatsReportingMsg -> OrinocoStatsReportingJobC;
+
+  components OrinocoDebugReportingJobC;
+  OrinocoDebugReportingJobC.Packet     -> OrinocoP;
+  MainProgram.OrinocoDebugReportingMsg -> OrinocoDebugReportingJobC;
+}

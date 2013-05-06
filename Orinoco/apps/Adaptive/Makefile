@@ -14,7 +14,6 @@ CFLAGS += \
         -I $(TOSDIR)/lib/net \
         -I ../../interfaces \
         -I ../../lib/net/orinoco \
-        -I ../../lib/rfxlink/layers \
         -I ../../../LocalTimeSyncedMicro/lib \
         -I ../../../EAJobs/interfaces \
         -I ../../../EAJobs/lib \
@@ -38,6 +37,7 @@ CFLAGS += \
 CFLAGS += \
         -I ../../chips/rf230  \
         -I ../../platforms/iris \
+        -I ../../lib/rfxlink/layers \
         -I ../../../LocalTimeSyncedMicro/chips/atm1281 \
         -I ../../../LocalTimeSyncedMicro/chips/atm1281/timer
 

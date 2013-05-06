@@ -49,7 +49,7 @@ module TestC {
   }
 }
 implementation {
-  #define MSG_BURST_LEN  3
+  #define MSG_BURST_LEN  1
   message_t  myMsg;
   uint16_t  cnt = 0;
 
@@ -62,7 +62,7 @@ implementation {
     call ForwardingControl.start();
 
     // start our packet timer
-    call Timer.startPeriodic(5120);
+    call Timer.startPeriodic(61440UL);
   }
 
   event void Timer.fired() {
@@ -74,11 +74,11 @@ implementation {
       // prepare message
       call Packet.clear(&myMsg);
       
-      d = call Packet.getPayload(&myMsg, 40);//call Packet.maxPayloadLength() - 12);
+      d = call Packet.getPayload(&myMsg, 2);//call Packet.maxPayloadLength() - 12);
       *d = cnt++;
 
       // and send it
-      call Send.send(&myMsg, 40);//call Packet.maxPayloadLength() - 12);
+      call Send.send(&myMsg, 2);//call Packet.maxPayloadLength() - 12);
     }
   }
 

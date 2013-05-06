@@ -38,6 +38,8 @@
  * @date 18 April 2013
  */
 
+#include "Reporting.h"
+#include "Orinoco.h"
 #include "Sender.h"
 
 module SenderC {
@@ -50,8 +52,13 @@ module SenderC {
     interface RootControl;
     interface Packet;
     interface Leds;
-    interface QueueSend as Send;
-	interface Read<uint16_t>[uint8_t id];
+    interface QueueSend as Send[collection_id_t];
+    interface Read<uint16_t>[uint8_t id];
+
+    // Orinoco Stats
+    interface Receive as OrinocoStatsReportingMsg;
+    interface Receive as OrinocoDebugReportingMsg;
+
   }
 }
 implementation {
@@ -130,7 +137,7 @@ implementation {
     }
     
     // and send it
-    call Send.send(&myMsg, ENTRY_SIZE);
+    call Send.send[22](&myMsg, ENTRY_SIZE);
   }
 
   /* ************************* DEFAULT HANDLERS ************************* */
@@ -149,5 +156,16 @@ implementation {
     /* Access to unconnected sensor. Let's raise this for now! */
     signalErrorAndHalt();
     return FAIL; 
+  }
+
+  /* ************************* ORINOCO STATS ************************* */
+  event message_t * OrinocoStatsReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
+    call Send.send[CID_ORINOCO_STATS_REPORT](msg, len);  // packet is copied or rejected
+    return msg;
+  }
+
+  event message_t * OrinocoDebugReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
+    call Send.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
+    return msg;
   }
 }
