@@ -54,7 +54,8 @@ module SenderC {
     interface Leds;
     interface QueueSend as Send[collection_id_t];
     interface Read<uint16_t>[uint8_t id];
-
+    interface ReadStream<uint16_t> as MotionDetector;
+    
     // Orinoco Stats
     interface Receive as OrinocoStatsReportingMsg;
     interface Receive as OrinocoDebugReportingMsg;
@@ -156,6 +157,14 @@ implementation {
     /* Access to unconnected sensor. Let's raise this for now! */
     signalErrorAndHalt();
     return FAIL; 
+  }
+  
+  event void MotionDetector.bufferDone(error_t result, uint16_t* buf, uint16_t count) {
+    // Placeholder if we want to collect data streams later
+  }
+  
+  event void MotionDetector.readDone(error_t result, uint32_t usActualPeriod) {
+    // Placeholder if we want to collect data streams later
   }
 
   /* ************************* ORINOCO STATS ************************* */

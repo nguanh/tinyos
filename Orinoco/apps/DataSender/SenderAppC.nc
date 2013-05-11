@@ -53,7 +53,8 @@ implementation {
   components new SensirionSht11C() 				as TempAndHumid,
   			 new HamamatsuS1087ParC() 			as PhotoPar,
 			 new HamamatsuS10871TsrC() 			as PhotoTsr,
-			 new Msp430InternalVoltageC() 		as InternalVoltage;
+			 new Msp430InternalVoltageC() 		as InternalVoltage,
+			 HanseElecSe10C			   			as MotionDetector;
 
   MainProgram.Boot              -> MainC.Boot;
   MainProgram.PollTimer         -> PollTimer;
@@ -70,6 +71,8 @@ implementation {
   MainProgram.Read[unique(UNIQUEID)] -> PhotoTsr;
   MainProgram.Read[unique(UNIQUEID)] -> PhotoPar;
   MainProgram.Read[unique(UNIQUEID)] -> InternalVoltage;
+  MainProgram.Read[unique(UNIQUEID)] -> MotionDetector;
+  MainProgram.MotionDetector         -> MotionDetector;
 
   // Orinoco internal reporting
   components OrinocoStatsReportingJobC;
