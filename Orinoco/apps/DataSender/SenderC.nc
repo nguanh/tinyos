@@ -12,7 +12,8 @@
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the
  *   distribution.
- * - Neither the name of the Hamburg University of Technology nor
+ * - Neither the name of the Hamburg University of Technology,
+ *   the University of New South Wales, nor
  *   the names of its contributors may be used to endorse or promote
  *   products derived from this software without specific prior written
  *   permission.
@@ -54,7 +55,7 @@ module SenderC {
     interface Leds;
     interface QueueSend as Send[collection_id_t];
     interface Read<uint16_t>[uint8_t id];
-    interface ReadStream<uint16_t> as MotionDetector;
+    interface ReadStream<uint16_t> as MotionStream;
     
     // Orinoco Stats
     interface Receive as OrinocoStatsReportingMsg;
@@ -67,6 +68,7 @@ implementation {
   uint16_t	cnt = 0;
   uint8_t	sensor_no;
   Entry 	entry;
+  uint16_t  averagingBuffer[MOTION_AVERAGE + 1];
   
   /* ************************* INIT ************************* */
   
@@ -77,7 +79,6 @@ implementation {
     call ForwardingControl.start();	// enable routing
 
     entry.counter = 0;				// Start sampling with sequence number 0
-    entry.flags = 0x23;				// Hash symbol
         
     call PollTimer.startPeriodic(SENSOR_POLL_INTV);	// start our polling timer
     call SendTimer.startPeriodic(SENSOR_SEND_INTV);	// start our sending timer
@@ -94,7 +95,7 @@ implementation {
 
   /* ************************* SENSOR POLLING ************************* */
   
-  task void sample() {
+  task void sample() { 
     if (sensor_no < uniqueCount(UNIQUEID)) {
       if (call Read.read[sensor_no]() != SUCCESS) {
         entry.values[sensor_no] = INVALID_SAMPLE_VALUE;
@@ -104,23 +105,34 @@ implementation {
         /* Read is asynchronous - let's wait for readDone to be called */
       }
     } else {
-      call Leds.led1Off();
       /* Reading done - as TX is asynchronous, we just sit and wait now */
     }
   }
 
   // Store collected sensor data  
   event void Read.readDone[uint8_t id](error_t error, uint16_t val) {
-    entry.values[sensor_no] = (error == SUCCESS) ? val : INVALID_SAMPLE_VALUE;
+    if (error == SUCCESS) {
+      atomic {
+        entry.values[sensor_no] = val;
+        entry.flags |= (0x80 >> sensor_no);
+      }
+    } else {
+      entry.values[sensor_no] = INVALID_SAMPLE_VALUE;
+    }
     sensor_no++;
     post sample();   // Sample the next sensor
   }
 
   event void PollTimer.fired() {
     sensor_no = 0;
+    entry.flags = 0;
     entry.counter++;
     call Leds.led1On();
     post sample();
+
+    /* Let's also average over some motion data... */
+    call MotionStream.postBuffer(averagingBuffer, MOTION_AVERAGE);
+    call MotionStream.read(1562);
   }
   
   /* ************************* TIMERS ************************* */
@@ -159,12 +171,27 @@ implementation {
     return FAIL; 
   }
   
-  event void MotionDetector.bufferDone(error_t result, uint16_t* buf, uint16_t count) {
-    // Placeholder if we want to collect data streams later
+  event void MotionStream.bufferDone(error_t result, uint16_t* buf, uint16_t count) {
+    uint8_t i;
+    uint16_t avg;
+    if (result != SUCCESS) signalErrorAndHalt();
+    
+    for (i=0; i<count; i++) {
+      avg += ((temp >> 4) & 0xFF);
+    }
+    avg = avg / count;
+    
+    atomic {
+      entry.motion = buf[count]; //& 0xFFFF);
+      entry.flags |= 0x80 >> uniqueCount(UNIQUEID);
+    }
+    
+    call Leds.led1Off(); 
   }
   
-  event void MotionDetector.readDone(error_t result, uint32_t usActualPeriod) {
-    // Placeholder if we want to collect data streams later
+  event void MotionStream.readDone(error_t result, uint32_t usActualPeriod) {
+    // This should only be signaled in case of errors, I think. Ignore it for now...
+    if (result != SUCCESS) signalErrorAndHalt();
   }
 
   /* ************************* ORINOCO STATS ************************* */

@@ -11,7 +11,7 @@
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the
  *   distribution.
- * - Neither the name of the Hamburg University of Technology nor
+ * - Neither the name of the University of New South Wales nor
  *   the names of its contributors may be used to endorse or promote
  *   products derived from this software without specific prior written
  *   permission.
@@ -33,42 +33,13 @@
 
 /**
  * @author Andreas Reinhardt
- * @date 18 April 2013
+ * @date 13 May 2013
  */
-
-#ifndef SENDER_H
-#define SENDER_H
-
-// Sensor definitions
-#define INVALID_SAMPLE_VALUE 0xFFFF
-#define UNIQUEID "Once a jolly swagman camped by a billabong"
-
-// Interval definitions
-#define SENSOR_POLL_INTV 2024
-#define SENSOR_SEND_INTV 5000
-#define MOTION_AVERAGE   64
-
-// Get some timer-independent sleep
-#ifdef __MSP430__
-static void __inline__ usleep(register uint16_t n) {
-  __asm__ __volatile__ (
-			"1: \n"
-			" dec %[n] \n"
-			" jne 1b \n"
-			: [n] "+r"(n));
+ 
+generic configuration MotionStreamC() {
+  provides interface ReadStream<uint16_t>;
 }
-#endif
-
-// Define how data are stored (NX types to keep this TX-able)
-typedef nx_struct Entry {
-  nx_uint8_t  flags;
-  nx_uint32_t counter;
-  nx_uint16_t values[uniqueCount(UNIQUEID)];
-  nx_uint16_t motion;
-} Entry;
-
-enum {
-  ENTRY_SIZE = sizeof(Entry),
-};
-
-#endif
+implementation {
+  components new HanseElecSe10C();
+  ReadStream = HanseElecSe10C.ReadStream;
+}

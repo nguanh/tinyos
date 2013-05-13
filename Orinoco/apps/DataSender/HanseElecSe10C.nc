@@ -11,7 +11,7 @@
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the
  *   distribution.
- * - Neither the name of the Hamburg University of Technology nor
+ * - Neither the name of the University of New South Wales nor
  *   the names of its contributors may be used to endorse or promote
  *   products derived from this software without specific prior written
  *   permission.
@@ -36,30 +36,31 @@
  * @date 10 May 2013
  */
 
-configuration HanseElecSe10C {
+generic configuration HanseElecSe10C() {
+  provides interface Read<uint16_t>;
+  provides interface ReadStream<uint16_t>;
   provides interface DeviceMetadata;
-  provides interface Read<uint16_t> as ReadMotion;
-  provides interface ReadStream<uint16_t> as ReadMotionStream;
 } 
-implementation {
-    
-  components HanseElecSe10P;
+implementation { 
+  enum {
+    ID = unique("se10.motion")
+  }; 
   
-  // When providing something, use = to indicate which class actually implements it
-  DeviceMetadata = HanseElecSe10P;  
-  ReadMotion = HanseElecSe10P.Se10Read;  
-  ReadMotionStream = HanseElecSe10P.Se10ReadStream;  
-
-  // Provider.Interface <- Consumer.Interface
-  // Consumer.Interface -> Provider.Interface
+  components HanseElecSe10P;
+  Read = HanseElecSe10P.ReadX[ID];  
+  ReadStream = HanseElecSe10P.ReadStreamX[ID];  
+  DeviceMetadata = HanseElecSe10P.DeviceMetadata;
+  
   components new AdcReadClientC();
-  HanseElecSe10P.Read -> AdcReadClientC;
+  HanseElecSe10P.HwRead[ID] -> AdcReadClientC;
   AdcReadClientC.AdcConfigure -> HanseElecSe10P;
   
   components new AdcReadStreamClientC();
-  HanseElecSe10P.ReadStream -> AdcReadStreamClientC;
+  HanseElecSe10P.HwReadStream[ID] -> AdcReadStreamClientC;
   AdcReadStreamClientC.AdcConfigure -> HanseElecSe10P;
   
-  components HplMsp430GeneralIOC;
-  HanseElecSe10P.EnablePin -> HplMsp430GeneralIOC.Port62;
+  components HplMsp430GeneralIOC as GeneralIOC;
+  components new Msp430GpioC() as EnablePin; 
+  EnablePin -> GeneralIOC.Port62; // ADC2
+  HanseElecSe10P.EnablePin -> EnablePin;
 }

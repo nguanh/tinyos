@@ -37,14 +37,14 @@
  */
 
 module HanseElecSe10P {
-  provides interface DeviceMetadata;
   provides interface AdcConfigure<const msp430adc12_channel_config_t*>;
-  provides interface Read<uint16_t> as Se10Read;
-  provides interface ReadStream<uint16_t> as Se10ReadStream;
+  provides interface Read<uint16_t> as ReadX[uint8_t client];
+  provides interface ReadStream<uint16_t> as ReadStreamX[uint8_t client];
+  provides interface DeviceMetadata;
   
-  uses interface Read<uint16_t>;
-  uses interface ReadStream<uint16_t>;
-  uses interface HplMsp430GeneralIO as EnablePin;  
+  uses interface Read<uint16_t> as HwRead[uint8_t client];
+  uses interface ReadStream<uint16_t> as HwReadStream[uint8_t client];
+  uses interface GeneralIO as EnablePin;  
 }
 implementation {
 
@@ -57,9 +57,9 @@ implementation {
     call EnablePin.clr();
   }
   
-  command error_t Se10Read.read() {
+  command error_t ReadX.read[uint8_t client]() {
     enable();
-    if (call Read.read() == SUCCESS) {
+    if (call HwRead.read[client]() == SUCCESS) {
       return SUCCESS;
     } else {
       disable();
@@ -67,13 +67,13 @@ implementation {
     }
   }
 
-  command error_t Se10ReadStream.postBuffer(uint16_t* buf, uint16_t count) {
-    return call ReadStream.postBuffer(buf, count);
+  command error_t ReadStreamX.postBuffer[uint8_t client](uint16_t* buf, uint16_t count) {
+    return call HwReadStream.postBuffer[client](buf, count);
   }
   
-  command error_t Se10ReadStream.read(uint32_t usPeriod) {
+  command error_t ReadStreamX.read[uint8_t client](uint32_t usPeriod) {
     enable();
-     if (call ReadStream.read(usPeriod) == SUCCESS) {
+     if (call HwReadStream.read[client](usPeriod) == SUCCESS) {
       return SUCCESS;
     } else {
       disable();
@@ -81,34 +81,44 @@ implementation {
     }
   }
   
-  event void Read.readDone(error_t result, uint16_t val) {
+  event void HwRead.readDone[uint8_t client](error_t result, uint16_t val) {
     disable();
-    signal Se10Read.readDone(result, val);
+    signal ReadX.readDone[client](result, val);
+  }
+
+  event void HwReadStream.bufferDone[uint8_t client](error_t result, uint16_t* buf, uint16_t count) {
+    signal ReadStreamX.bufferDone[client](result, buf, count);
   }
   
-  event void ReadStream.bufferDone(error_t result, uint16_t* buf, uint16_t count) {
-    signal Se10ReadStream.bufferDone(result, buf, count);
+  event void HwReadStream.readDone[uint8_t client](error_t result, uint32_t usActualPeriod) {
+    disable();
+    signal ReadStreamX.readDone[client](result, usActualPeriod);
   }
   
-  event void ReadStream.readDone(error_t result, uint32_t usActualPeriod) {
-    disable();
-    signal Se10ReadStream.readDone(result, usActualPeriod);
-  }
- 
   msp430adc12_channel_config_t config = {
     inch: INPUT_CHANNEL_A1,
     sref: REFERENCE_VREFplus_AVss,
-    ref2_5v: REFVOLT_LEVEL_1_5,
-    adc12ssel: SHT_SOURCE_ACLK,
+    ref2_5v: REFVOLT_LEVEL_NONE,
+    adc12ssel: SHT_SOURCE_SMCLK,
     adc12div: SHT_CLOCK_DIV_1,
-    sht: SAMPLE_HOLD_4_CYCLES,
+    sht: SAMPLE_HOLD_64_CYCLES,
     sampcon_ssel: SAMPCON_SOURCE_SMCLK,
     sampcon_id: SAMPCON_CLOCK_DIV_1
   };
 
-  command uint8_t DeviceMetadata.getSignificantBits() { return 12; }
-
   async command const msp430adc12_channel_config_t* AdcConfigure.getConfiguration() {
     return &config;
   }
+  
+  command uint8_t DeviceMetadata.getSignificantBits() {
+    return 12;
+  }
+  
+  // Define what happens to the data when no one wires our provided interface
+  default event void ReadX.readDone[uint8_t client](error_t result, uint16_t val) {}
+  default event void ReadStreamX.bufferDone[uint8_t client](error_t result, uint16_t* buf, uint16_t count) {}
+  default event void ReadStreamX.readDone[uint8_t client](error_t result, uint32_t usActualPeriod) {}
+  default command error_t HwRead.read[uint8_t client]() { return FAIL; }
+  default command error_t HwReadStream.read[uint8_t client](uint32_t usPeriod) { return FAIL; }
+  default command error_t HwReadStream.postBuffer[uint8_t client](uint16_t* buf, uint16_t count) { return FAIL; }
 }
