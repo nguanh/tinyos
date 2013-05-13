@@ -177,7 +177,7 @@ implementation {
     if (result != SUCCESS) signalErrorAndHalt();
     
     for (i=0; i<count; i++) {
-      avg += ((temp >> 4) & 0xFF);
+      avg += ((buf[i] >> 4) & 0xFF);
     }
     avg = avg / count;
     
