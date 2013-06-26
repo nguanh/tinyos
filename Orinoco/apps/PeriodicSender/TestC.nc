@@ -62,7 +62,8 @@ implementation {
     call ForwardingControl.start();
 
     // start our packet timer
-    call Timer.startPeriodic(61440UL);
+    //call Timer.startPeriodic(61440UL);
+    call Timer.startPeriodic(3072UL);
   }
 
   event void Timer.fired() {
@@ -74,11 +75,11 @@ implementation {
       // prepare message
       call Packet.clear(&myMsg);
       
-      d = call Packet.getPayload(&myMsg, 2);//call Packet.maxPayloadLength() - 12);
+      d = call Packet.getPayload(&myMsg, 10);//call Packet.maxPayloadLength() - 12);
       *d = cnt++;
 
       // and send it
-      call Send.send(&myMsg, 2);//call Packet.maxPayloadLength() - 12);
+      call Send.send(&myMsg, 10);//call Packet.maxPayloadLength() - 12);
     }
   }
 

@@ -150,6 +150,8 @@ implementation {
     if (! accept) ps_.numIgnoredBeacons++;
 #endif
 
+    dbg("processing beacon, accept = %u\n", accept);
+
     return accept;
   }
 
@@ -529,6 +531,8 @@ implementation {
   /*** BeaconSubReceive **************************************************/
   //event message_t * BeaconSubReceive.receive(message_t * msg) {
   event message_t * BeaconSubReceive.receive(message_t * msg, void *, uint8_t) {
+  
+    dbg("received beacon (checking further action)\n");
 
     // when receiving a beacon, ignore any other case than FORWARD
     // particularly do not update parent when a data packet has already been sent (ack pending)
@@ -610,6 +614,8 @@ implementation {
   /*** DataSubReceive ****************************************************/
   //event message_t * DataSubReceive.receive(message_t * msg) {
   event message_t * DataSubReceive.receive(message_t * msg, void * payload, uint8_t len) {
+    dbg("received data\n");
+
     // received data outside receive => ignore for the moment (TODO?)
     if (state_ == RECEIVE) {
       call Timer.stop();  // just received data, stop timer
@@ -640,6 +646,8 @@ implementation {
       } else {
         curCongestionWin_ *= 2;
       }*/
+    } else {
+      dbg("ignored data (NOT in receive state)\n");
     }
 
     return msg;
