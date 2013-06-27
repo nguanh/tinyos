@@ -98,8 +98,10 @@ implementation {
   task void sample() { 
     if (sensor_no < uniqueCount(UNIQUEID)) {
       if (call Read.read[sensor_no]() != SUCCESS) {
-        entry.values[sensor_no] = INVALID_SAMPLE_VALUE;
-        sensor_no++;
+        atomic {
+          entry.values[sensor_no] = INVALID_SAMPLE_VALUE;
+          sensor_no++;
+        }
         post sample();   // Samples the next sensor
       } else {
         /* Read is asynchronous - let's wait for readDone to be called */
@@ -117,16 +119,20 @@ implementation {
         entry.flags |= (0x80 >> sensor_no);
       }
     } else {
-      entry.values[sensor_no] = INVALID_SAMPLE_VALUE;
+      atomic {
+        entry.values[sensor_no] = INVALID_SAMPLE_VALUE;
+      }
     }
-    sensor_no++;
+    atomic { sensor_no++; }
     post sample();   // Sample the next sensor
   }
 
   event void PollTimer.fired() {
-    sensor_no = 0;
-    entry.flags = 0;
-    entry.counter++;
+    atomic {
+      sensor_no = 0;
+      entry.flags = 0;
+      entry.counter++;
+    }
     call Leds.led1On();
     post sample();
 
