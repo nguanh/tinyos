@@ -129,9 +129,9 @@ implementation {
   // process beacon and determine whether to accept neigbhor for data forwarding
   bool processBeacon(message_t * msg, bool update) {
     bool accept = FALSE;
+
     // TODO this could be encapsulated by a stand-alone module to enable
     // different implementations
-    //if (call PacketRSSI.get(msg) >= ORINOCO_MIN_RSSI) {
     // FIXME experimental
     if (TRUE) { //call LinkPacketMetadata.highChannelQuality(msg) || call PathCost.getCost() == ORINOCO_PATHCOST_INF) {
       OrinocoBeaconMsg * p = (OrinocoBeaconMsg *)call SubPacket.getPayload(msg, sizeof(OrinocoBeaconMsg *));

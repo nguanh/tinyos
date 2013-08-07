@@ -54,19 +54,17 @@ module OrinocoTrafficStatisticsP {
   }
 }
 implementation {
-  // TODO howto initial this beast?
-  // FIXME correct?
   orinoco_traffic_statistics_t ts_ = { 0, 0, ORINOCO_DFLT_WAKEUP_INTERVAL/2, 256, 256};
+  // the def is as follows
   //uint32_t  avgCreationRate;      ///> mean number of packets per inspected period
   //uint32_t  avgReceptionRate;     ///> mean number of packets per inspected period
   //uint32_t  avgForwardDelay;      ///> mean delay for packet delivery (waiting time before first beacon) (ms)
   //uint8_t   avgTxBurstLen;        ///> average length of subsequently sent packets
   //uint8_t   avgRxBurstLen;        ///> average length of subsequently received packets
+
   struct {
-    //uint32_t  lastCreationTime;   ///> time at which last packet was created
-    //uint32_t  lastReceptionTime;  ///> time at which last packet was received
-    uint16_t  numPktCreated;
-    uint16_t  numPktReceived;
+    uint16_t  numPktCreated;      ///> number of created packets since last update
+    uint16_t  numPktReceived;     ///> number of received packets since last update
     uint32_t  curForwardTime;     ///> time at which forwarding was started
     uint8_t   curTxBurstLen;      ///> current number of subsequently sent packets
     uint8_t   curRxBurstLen;      ///> current number of subsequently received packets

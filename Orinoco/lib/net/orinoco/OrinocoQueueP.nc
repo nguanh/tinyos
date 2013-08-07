@@ -109,10 +109,10 @@ implementation {
     }
 
     // get the packet and put it into the queue
-    // FIXME TODO
     qe = call SendQueue.head();
     call MsgPool.put(qe.msg);
 
+    // FIXME
     // this is really crap! We must perform artificial sending, i.e., prepare
     // the whole message (including AM stuff, time stamping, etc.) and move it upwards
     

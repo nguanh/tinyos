@@ -88,10 +88,6 @@ typedef nx_struct {
   nx_uint8_t          hopCnt;  // hop count
   nx_collection_id_t  type;    // packet type
   nx_uint8_t          path[ORINOCO_MAX_PATH_RECORD]; // TODO remove after debug
-//  nx_union {                       // from TimeSyncMessageLayer.h
-//    timesync_relative_t relative;  // time delta, sent over the air
-//    timesync_absolute_t absolute;  // absolute time in node's local time
-//  } timestamp;
 } orinoco_data_header_t;
 
 typedef nx_struct {
@@ -119,13 +115,5 @@ typedef struct {
 #ifndef ORINOCO_PACKETHISTORY_SIZE
 #  define ORINOCO_PACKETHISTORY_SIZE  30
 #endif
-
-/* radio setup */
-// FIXME at the moment, we rely on PacketLinkMetadata.highChannelQuality
-// from the radio driver layer to enable cross-platfrom compatibility
-// could be revised at some point
-//enum {
-//  ORINOCO_MIN_RSSI           = 2, // min. RSSI needed to accept a beacon
-//};
 
 #endif /* ORINOCO_H */
