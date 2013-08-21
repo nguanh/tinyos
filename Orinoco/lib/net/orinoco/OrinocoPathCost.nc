@@ -45,7 +45,6 @@ interface OrinocoPathCost {
   command orinoco_pathcost_t getCost();
 
   // update current cost
-  // TODO
   command void reviseCost();
 
   // check whether to accept a beacon offer

@@ -41,16 +41,21 @@
 
 
 interface OrinocoTrafficUpdates {
-  // TODO documentation
-
+  // inform traffic monitor about newly created packet
   command void updatePktCreationIntvl();
 
+  // inform traffic monitor about newly received packet
   command void updatePktReceptionIntvl();
 
+  // inform traffic monitor about an active / ended burst of sent packets
+  // @param end TRUE, if the last packet was sent; FALSE, if another packet will follow
   command void updateTxBurst(bool end);
 
+  // inform traffic monitor about an active / ended burst of received packets
+  // @param end TRUE, if the last packet was received; FALSE, if another packet will be received
   command void updateRxBurst(bool end);
 
+  // inform traffic monitor about the latest time before a packet could be forwarded
   command void updateForwardDelay(bool done);
 }
 
