@@ -541,7 +541,7 @@ implementation {
       bool isAck = FALSE;
 
       //RADIO_ASSERT(txDataMsg_ != NULL);
-      //call Leds.led1Toggle();
+      call Leds.led1Toggle(); // AR ADDED
 
       // STEP 1
       // if the beacon is addressed to me, its an ack to txDataMsg_
@@ -671,7 +671,7 @@ implementation {
 #endif
 
     if (error == SUCCESS) {
-      //call Leds.led2Toggle();  // TODO remove
+      call Leds.led2Toggle();  // AR ADDED
       state_++;   // ok -> next state
     } else {
       state_ = SLEEP_SUBSTOP;  // could not send beacon, abort
