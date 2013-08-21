@@ -1,6 +1,6 @@
 COMPONENT=SenderAppC
 
-#CFLAGS += -DRF230_DEF_CHANNEL=19
+CFLAGS += -DRF230_DEF_CHANNEL=12
 CFLAGS += -DTOSH_DATA_LENGTH=80
 CFLAGS += -DDISABLE_SYNCED_MICRO
 CFLAGS += -DORINOCO_DEBUG_STATISTICS
@@ -10,15 +10,14 @@ include $(MAKERULES)
 
 CFLAGS += \
 	-I . \
-	-I $(TOSDIR)/lib/net \
 	-I ../../interfaces \
 	-I ../../lib/net/orinoco \
 	-I ../../../LocalTimeSyncedMicro/lib \
 	-I ../../../EAJobs/interfaces \
 	-I ../../../EAJobs/lib \
-        -I ../../../Tools \
+	-I ../../../Tools \
         -I ../../../Reporting \
-	-I ../../../Tools
+	-I $(TOSDIR)/lib/net \
 
 ifeq ($(findstring $(PLATFORM),iris), iris)
 CFLAGS += \

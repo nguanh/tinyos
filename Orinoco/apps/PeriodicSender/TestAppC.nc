@@ -49,7 +49,17 @@ implementation {
   TestC.Timer             -> TimerMilliC;
   TestC.RadioControl      -> OrinocoP;
   TestC.ForwardingControl -> OrinocoP;
-  TestC.Send              -> OrinocoP.Send[22];  // some arbitrary number
+  TestC.Send              -> OrinocoP.Send[33];  // AM packet type
   TestC.RootControl       -> OrinocoP;
   TestC.Packet            -> OrinocoP;
+  TestC.OrinocoConfig     -> OrinocoP;
+    
+  // Orinoco internal reporting
+  components OrinocoStatsReportingJobC;
+  OrinocoStatsReportingJobC.Packet -> OrinocoP;
+  TestC.OrinocoStatsReportingMsg   -> OrinocoStatsReportingJobC;
+
+  components OrinocoDebugReportingJobC;
+  OrinocoDebugReportingJobC.Packet -> OrinocoP;
+  TestC.OrinocoDebugReportingMsg   -> OrinocoDebugReportingJobC;
 }

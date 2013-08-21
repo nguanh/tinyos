@@ -36,6 +36,13 @@
  * @author Christian Renner
  * @date December 14 2011
  */
+ 
+#include "Reporting.h"
+
+#define MSG_BURST_LEN      1    // number of packets per period (#)
+#define DATA_PERIOD    30720UL  // data creation period (ms)
+#define QUEUE_LIMIT        1    // aggregattion degree (#)
+#define WAKEUP_INTVL    1024    // wake-up period (ms)
 
 module TestC {
   uses {
@@ -44,12 +51,16 @@ module TestC {
     interface SplitControl as RadioControl;
     interface StdControl as ForwardingControl;
     interface RootControl;
+    interface OrinocoConfig;
     interface Packet;
     interface QueueSend as Send;
+        
+    // Orinoco Stats
+    interface Receive as OrinocoStatsReportingMsg;
+    interface Receive as OrinocoDebugReportingMsg;
   }
 }
 implementation {
-  #define MSG_BURST_LEN  1
   message_t  myMsg;
   uint16_t  cnt = 0;
 
@@ -60,10 +71,13 @@ implementation {
     // switch on radio and enable routing
     call RadioControl.start();
     call ForwardingControl.start();
+    
+    call OrinocoConfig.setWakeUpInterval(WAKEUP_INTVL);  
+    call OrinocoConfig.setMinQueueSize(1);
 
     // start our packet timer
     //call Timer.startPeriodic(61440UL);
-    call Timer.startPeriodic(3072UL);
+    call Timer.startPeriodic(30720UL);  // 30s
   }
 
   event void Timer.fired() {
@@ -75,11 +89,11 @@ implementation {
       // prepare message
       call Packet.clear(&myMsg);
       
-      d = call Packet.getPayload(&myMsg, 10);//call Packet.maxPayloadLength() - 12);
+      d = call Packet.getPayload(&myMsg, sizeof(cnt));
       *d = cnt++;
 
       // and send it
-      call Send.send(&myMsg, 10);//call Packet.maxPayloadLength() - 12);
+      call Send.send(&myMsg, sizeof(cnt));
     }
   }
 
@@ -89,5 +103,17 @@ implementation {
 
   event void RadioControl.stopDone(error_t error) {
     // nothing
+  }
+  
+  
+  /* ************************* ORINOCO STATS ************************* */
+  event message_t * OrinocoStatsReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
+//     call Send.send[CID_ORINOCO_STATS_REPORT](msg, len);  // packet is copied or rejected
+    return msg;
+  }
+
+  event message_t * OrinocoDebugReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
+//     call Send.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
+    return msg;
   }
 }
