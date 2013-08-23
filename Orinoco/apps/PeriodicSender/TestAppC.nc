@@ -49,7 +49,7 @@ implementation {
   TestC.Timer             -> TimerMilliC;
   TestC.RadioControl      -> OrinocoP;
   TestC.ForwardingControl -> OrinocoP;
-  TestC.Send              -> OrinocoP.Send[33];  // AM packet type
+  TestC.Send              -> OrinocoP.Send;
   TestC.RootControl       -> OrinocoP;
   TestC.Packet            -> OrinocoP;
   TestC.OrinocoConfig     -> OrinocoP;
