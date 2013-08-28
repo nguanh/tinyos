@@ -73,7 +73,8 @@ module OrinocoRadioP {
     interface OrinocoPathCost as PathCost;
     interface LinkPacketMetadata;
 //    interface PacketField<uint8_t> as PacketRSSI;
-
+    interface OrinocoRouting as Routing;
+ 
     // configuration
     interface OrinocoConfig as Config;
     interface Random;
@@ -100,20 +101,12 @@ implementation {
 
   bool         beaconCancel_ = FALSE;
 
-  orinoco_routing_t curRouting_;
-  bool         packetWaiting_ = FALSE;
-  
 #ifdef ORINOCO_DEBUG_STATISTICS
   orinoco_packet_statistics_t   ps_ = {0};
 #endif
 
 
   /*** beacon handling ***************************************************/
-  
-  void checkForWaitingPackets(void) {
-    // TODO calculate BF pointers for local ID and see if contained in the rx'ed BF
-    call Leds.led1Toggle();  // Show that there's a packet waiting for us...
-  }
   
   // prepare and send a beacon
   error_t sendBeacon() {
@@ -124,7 +117,7 @@ implementation {
     p = call BeaconSubSend.getPayload(&txBeaconMsg_, sizeof(OrinocoBeaconMsg));
     p->cost  = call PathCost.getCost();
     p->cw    = curCongestionWin_;
-    p->route = curRouting_; 
+    p->route = *(call Routing.getCurrentBloomFilter()); 
     
     // try sending
     dbg("sending beacon to %u (routing version %d)\n", txBeaconDst_, curRouting_.version);
@@ -153,19 +146,8 @@ implementation {
         // store max. backoff (the back-offing is implemented in OrinocoForwardLayer)
         txDataMaxBackoff_ = p->cw;
         
-        // check if beacon carries newer version of routing information 
-        if (p->route.version > curRouting_.version || 
-           ((curRouting_.version == 0xFFFF) & (p->route.version == 0))) {
-          uint8_t i;
-          dbg("update to routing version %u->%u\n",curRouting_.version,p->route.version);
-          
-          // TODO check if this really needs to be copied or if we can use the pointer 
-          curRouting_.version = p->route.version; // TODO is memcpy an alternative?
-          for (i=0;i<BLOOM_BYTES;i++) curRouting_.bloom[i] = p->route.bloom[i];
-
-          // check if there's a packet waiting for us...
-          checkForWaitingPackets();
-        }
+        // forwarded accepted beacon routing payload to routing subcomponent
+        call Routing.updateBloomFilter(p->route);
       }
     }
 
@@ -341,6 +323,8 @@ implementation {
 
   /*** SplitControl ******************************************************/
   command error_t SplitControl.start() {
+    // when bringing up the radio, check for 
+  
     // three cases:
     // 1.) we're off -> can switch on now
     if (state_ == OFF) {

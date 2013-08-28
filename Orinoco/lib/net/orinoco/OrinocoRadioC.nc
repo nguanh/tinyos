@@ -38,6 +38,7 @@
  */
 
 #include "Orinoco.h"
+#include "Routing.h"
 
 configuration OrinocoRadioC {
   provides {
@@ -104,6 +105,10 @@ implementation {
   components OrinocoConfigC;
   Mac.Config -> OrinocoConfigC;
 
+  components OrinocoRoutingC;
+  Mac.Routing -> OrinocoRoutingC;
+  SplitControl = OrinocoRoutingC;
+  
   components RandomC;
   Mac.Random -> RandomC;
 
