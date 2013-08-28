@@ -101,7 +101,7 @@ implementation {
   bool         beaconCancel_ = FALSE;
 
   orinoco_routing_t curRouting_;
-  bool         packetWaiting_ = false;
+  bool         packetWaiting_ = FALSE;
   
 #ifdef ORINOCO_DEBUG_STATISTICS
   orinoco_packet_statistics_t   ps_ = {0};
@@ -111,11 +111,7 @@ implementation {
   /*** beacon handling ***************************************************/
   
   void checkForWaitingPackets(void) {
-    // TODO calculate BF pointers for local ID
-    // Check BF pointers with 
-    if ((curRouting_.bloom[i] & o) == o) {
-      // TODO Yes
-    }
+    // TODO calculate BF pointers for local ID and see if contained in the rx'ed BF
     call Leds.led1Toggle();  // Show that there's a packet waiting for us...
   }
   
