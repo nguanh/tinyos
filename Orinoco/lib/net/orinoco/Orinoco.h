@@ -69,6 +69,16 @@ typedef nx_uint8_t nx_collection_id_t;
 typedef uint8_t    orinoco_pathcost_t;
 typedef nx_uint8_t nx_orinoco_pathcost_t;
 
+/* routing */
+enum {
+  BLOOM_BYTES = 8
+};
+typedef nx_struct {
+  nx_uint16_t      version;             // version number of Bloom filter
+  nx_uint8_t       bloom[BLOOM_BYTES];  // Bloom filter of recipient IDs
+} orinoco_routing_t;
+
+
 enum {
   ORINOCO_PATHCOST_SINK = 0x00,
   ORINOCO_PATHCOST_INF  = 0xFF

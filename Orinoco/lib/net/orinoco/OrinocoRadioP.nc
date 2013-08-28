@@ -100,12 +100,25 @@ implementation {
 
   bool         beaconCancel_ = FALSE;
 
+  orinoco_routing_t curRouting_;
+  bool         packetWaiting_ = false;
+  
 #ifdef ORINOCO_DEBUG_STATISTICS
   orinoco_packet_statistics_t   ps_ = {0};
 #endif
 
 
   /*** beacon handling ***************************************************/
+  
+  void checkForWaitingPackets(void) {
+    // TODO calculate BF pointers for local ID
+    // Check BF pointers with 
+    if ((curRouting_.bloom[i] & o) == o) {
+      // TODO Yes
+    }
+    call Leds.led1Toggle();  // Show that there's a packet waiting for us...
+  }
+  
   // prepare and send a beacon
   error_t sendBeacon() {
     OrinocoBeaconMsg  * p;
@@ -115,9 +128,10 @@ implementation {
     p = call BeaconSubSend.getPayload(&txBeaconMsg_, sizeof(OrinocoBeaconMsg));
     p->cost  = call PathCost.getCost();
     p->cw    = curCongestionWin_;
-
+    p->route = curRouting_; 
+    
     // try sending
-    dbg("sending beacon to %u\n", txBeaconDst_);
+    dbg("sending beacon to %u (routing version %d)\n", txBeaconDst_, curRouting_.version);
     error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg));
 
     // reset beacon sending address (next one is no ack by default)
@@ -142,6 +156,20 @@ implementation {
         txDataDst_        = call SubAMPacket.source(msg);
         // store max. backoff (the back-offing is implemented in OrinocoForwardLayer)
         txDataMaxBackoff_ = p->cw;
+        
+        // check if beacon carries newer version of routing information 
+        if (p->route.version > curRouting_.version || 
+           ((curRouting_.version == 0xFFFF) & (p->route.version == 0))) {
+          uint8_t i;
+          dbg("update to routing version %u->%u\n",curRouting_.version,p->route.version);
+          
+          // TODO check if this really needs to be copied or if we can use the pointer 
+          curRouting_.version = p->route.version; // TODO is memcpy an alternative?
+          for (i=0;i<BLOOM_BYTES;i++) curRouting_.bloom[i] = p->route.bloom[i];
+
+          // check if there's a packet waiting for us...
+          checkForWaitingPackets();
+        }
       }
     }
 

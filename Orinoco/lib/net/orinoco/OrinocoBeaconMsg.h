@@ -8,6 +8,7 @@
 typedef nx_struct OrinocoBeaconMsg {
   nx_orinoco_pathcost_t  cost;      // Orinoco path metric offer
   nx_uint8_t             cw;        // congestion window 
+  orinoco_routing_t      route;     // Support for down-tree routing
 } OrinocoBeaconMsg;
 
 
