@@ -622,6 +622,7 @@ implementation {
 
       txBeaconDst_   = call SubAMPacket.source(msg);  // store sender of data for beacon ack
 
+      // TODO we *must* check if there is room in the queue (otherwise the packet cannot be stored and will be lost!
       state_ = RECEIVE_SUBSEND;                  // and send another beacon
       post transition();
 
@@ -646,6 +647,7 @@ implementation {
       } else {
         curCongestionWin_ *= 2;
       }*/
+      dbg("ignored data (NOT in receive state)\n");
     } else {
       dbg("ignored data (NOT in receive state)\n");
     }
