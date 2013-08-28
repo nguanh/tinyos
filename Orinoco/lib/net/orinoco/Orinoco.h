@@ -87,7 +87,9 @@ typedef nx_struct {
   nx_uint8_t          seqno;   // sequence number
   nx_uint8_t          hopCnt;  // hop count
   nx_collection_id_t  type;    // packet type
-  nx_uint8_t          path[ORINOCO_MAX_PATH_RECORD]; // TODO remove after debug
+#ifdef ORINOCO_DEBUG_PATH
+  nx_uint8_t          path[ORINOCO_MAX_PATH_RECORD];
+#endif
 } orinoco_data_header_t;
 
 typedef nx_struct {

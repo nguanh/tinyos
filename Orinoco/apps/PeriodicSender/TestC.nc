@@ -79,8 +79,7 @@ implementation {
     call OrinocoConfig.setMinQueueSize(1);
 
     // start our packet timer
-    //call Timer.startPeriodic(61440UL);
-    call Timer.startPeriodic(30720UL);  // 30s
+    call Timer.startPeriodic(DATA_PERIOD);
   }
 
   event void Timer.fired() {
