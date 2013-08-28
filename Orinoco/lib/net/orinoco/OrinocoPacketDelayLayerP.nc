@@ -52,6 +52,7 @@ module OrinocoPacketDelayLayerP {
   }
 }
 implementation {
+  bool      busy = FALSE;
   uint32_t  ctime;
   uint8_t   dtime;
   uint8_t   delay = 0;
@@ -69,7 +70,18 @@ implementation {
 
   /*** AMSend.send *******************************************************/
   command error_t AMSend.send(am_addr_t dst, message_t * msg, uint8_t len) {
-    uint32_t now = call LocalTimeMilli.get();
+    error_t   ret;
+    uint32_t  now;
+
+    atomic {
+      if (busy) {
+        return EBUSY;
+      }
+      busy = TRUE;
+    }
+
+    // get current time
+    now = call LocalTimeMilli.get();
 
     // memorize time of sending to calculate delay inside sendDone
     dtime = now;
@@ -78,7 +90,12 @@ implementation {
     // get time difference of current time (+ average MAC delay) and packet creation time
     getFooter(msg)->ctime -= now + delay;
 
-    return call SubAMSend.send(dst, msg, len + sizeof(orinoco_delay_footer_t));
+    ret = call SubAMSend.send(dst, msg, len + sizeof(orinoco_delay_footer_t));
+    if (ret != SUCCESS) {
+      getFooter(msg)->ctime = ctime;
+      busy = FALSE;
+    }
+    return ret;
   }
 
   command error_t AMSend.cancel(message_t * msg) {
@@ -96,6 +113,7 @@ implementation {
 
   /*** SubAMSend *********************************************************/
   event void SubAMSend.sendDone(message_t * msg, error_t error) {
+    busy = FALSE;
     if (error == SUCCESS) {
       // update avg delay (EWMA with coeff 0.5)
       delay  += (uint8_t)call LocalTimeMilli.get() - dtime;
