@@ -1,12 +1,10 @@
 COMPONENT=SenderAppC
 
-CFLAGS += -DRF230_DEF_CHANNEL=12
-CFLAGS += -DTOSH_DATA_LENGTH=80
+include $(MAKERULES)
+include ../Makefile.radioconfig
+
 CFLAGS += -DDISABLE_SYNCED_MICRO
 CFLAGS += -DORINOCO_DEBUG_STATISTICS
-
-# Use this to set the PLATFORM variable
-include $(MAKERULES)
 
 CFLAGS += \
 	-I . \
