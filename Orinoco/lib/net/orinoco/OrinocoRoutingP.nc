@@ -68,12 +68,12 @@ implementation {
     data |= (uint16_t) address;
 
     // hash function borrowed from http://burtleburtle.net/bob/hash/integer.html
-    data = (data+0x7ed55d16)    + (data<<12);
-    data = (data^0xc761c23c)    ^ (data>>19);
-    data = (data+0x165667b1)    + (data<<5);
-    data = (data+0xd3data2646c) ^ (data<<9);
-    data = (data+0xfd7046c5)    + (data<<3);
-    data = (data^0xb55data4f09) ^ (data>>16);
+    data = (data+0x7ed55d16) + (data<<12);
+    data = (data^0xc761c23c) ^ (data>>19);
+    data = (data+0x165667b1) + (data<<5);
+    data = (data+0xd3a2646c) ^ (data<<9);
+    data = (data+0xfd7046c5) + (data<<3);
+    data = (data^0xb55a4f09) ^ (data>>16);
 
     return data % (BLOOM_BYTES*8);
   }
