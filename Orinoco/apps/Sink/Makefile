@@ -1,13 +1,11 @@
 COMPONENT=SinkC
 
-CFLAGS += -DRF230_DEF_CHANNEL=11
-CFLAGS += -DTOSH_DATA_LENGTH=80
+include $(MAKERULES)
+include ../Makefile.radioconfig
+
 CFLAGS += -DORINOCO_DEBUG_STATISTICS
 CFLAGS += -DDISABLE_SYNCED_MICRO
 CFLAGS += -DORINOCO_QUEUE_SIZE=1
-
-# Use this to set the PLATFORM variable
-include $(MAKERULES)
 
 CFLAGS += \
 	-I . \

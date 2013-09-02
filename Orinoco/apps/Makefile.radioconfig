@@ -1,0 +1,97 @@
+#######################################################
+# This Makefile.radioconfig encapsulates all settings #
+# for the radio transceivers in one place.  All other #
+# Makefiles should include this file instead of using #
+# individual definitions of below parameters...       #
+#######################################################
+
+########## Maximum data length (for buffer allocation)
+PACKETLENGTH=80
+
+########## Radio channel (11-26 in 2.4GHz)
+CC2420CHANNEL=18
+RF230CHANNEL=12
+
+########## Radio TX Power (see below for values)
+#CC2420POWER=31
+#RF230POWER=10
+
+$(info #######################################################)
+ifeq ($(PLATFORM),)
+  $(warning Plaform variable unspecified)
+  $(error 'Makefile.radioconfig' must be included after $$(MAKERULES))
+else
+
+  ifneq ($(strip $(PACKETLENGTH)),)
+    CFLAGS += -DTOSH_DATA_LENGTH=$(PACKETLENGTH)
+  else
+    PACKETLENGTH=28# TOSROOT/tos/chips/cc2420/CC2420.h:153, TOSROOT/tos/types/message.h:7
+  endif 
+
+  ifeq ($(findstring $(PLATFORM),iris), iris)
+    ifneq ($(strip $(RF230CHANNEL)),)
+      CFLAGS += -DRF230_DEF_CHANNEL=$(RF230CHANNEL)
+    else
+      RF230CHANNEL=11# TOSROOT/tos/platforms/iris/chips/rf230/RadioConfig.h:70
+    endif
+ 
+    ifneq ($(strip $(RF230POWER)),)
+      CFLAGS += -DRF230_DEF_RFPOWER=$(RF230POWER)
+    else
+      RF230POWER=0# TOSROOT/tos/platforms/iris/chips/rf230/RadioConfig.h:65
+    endif
+    $(info Radio config: Channel $(RF230CHANNEL), MaxLen $(PACKETLENGTH) bytes, TX power: $(RF230POWER))
+
+  else ifeq ($(findstring $(PLATFORM),telosb), telosb)
+    ifneq ($(strip $(CC2420CHANNEL)),)
+      CFLAGS += -DCC2420_DEF_CHANNEL=$(CC2420CHANNEL)
+    else
+      CC2420CHANNEL=26# TOSROOT/tos/chips/cc2420/CC2420.h:157
+    endif
+
+    ifneq ($(strip $(CC2420POWER)),)
+      CFLAGS += -DCC2420_DEF_RFPOWER=$(CC2420POWER)
+    else
+      CC2420POWER=31# TOSROOT/tos/chips/cc2420/CC2420.h:161
+    endif
+    $(info Radio config: Channel $(CC2420CHANNEL), MaxLen $(PACKETLENGTH) bytes, TX power: $(CC2420POWER))
+  else
+    $(warning NO PLATFORM DEFINED)
+  endif
+endif
+$(info #######################################################)
+
+
+##############################################################
+# CC2420: Cf. section 28 in http://www.ti.com/lit/gpn/cc2420
+# 31 =   0 dBm (17.4mA) <-- default
+# 27 =  -1 dBm (16.5mA)
+# 23 =  -3 dBm (15.2mA)
+# 19 =  -5 dBm (13.9mA)
+# 15 =  -7 dBm (12.5mA)
+# 11 = -10 dBm (11.2mA)
+#  7 = -15 dBm ( 9.9mA)
+#  3 = -25 dBm ( 8.5mA)
+#
+# RF230: Cf. page 59 in http://www.atmel.com/dyn/resources/prod_documents/doc5131.pdf
+#  0 =  3.0 dBm
+#  1 =  2.6 dBm
+#  2 =  2.1 dBm
+#  3 =  1.6 dBm
+#  4 =  1.1 dBm
+#  5 =  0.5 dBm
+#  6 = -0.2 dBm
+#  7 = -1.2 dBm
+#  8 = -2.2 dBm
+#  9 = -3.2 dBm
+# 10 = -4.2 dBm
+# 11 = -5.2 dBm
+# 12 = -7.2 dBm
+# 13 = -9.2 dBm
+# 14 = -12.2dBm
+# 15 = -17.2dBm
+
+
+
+
+

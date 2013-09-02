@@ -1,10 +1,11 @@
 COMPONENT=TestAppC
 
+include $(MAKERULES)
+include ../Makefile.radioconfig
+
 #CFLAGS += -DENERGY_POLICY=EnergyPolicyMaxPowerC
 CFLAGS += -DENERGY_POLICY=EnergyPolicyDepletionSafeC
 
-CFLAGS += -DRF230_DEF_CHANNEL=19
-CFLAGS += -DTOSH_DATA_LENGTH=80
 CFLAGS += -DORINOCO_DEBUG_STATISTICS
 #CFLAGS += -DUSE_REFCAP
 
@@ -46,4 +47,3 @@ CFLAGS += \
 LDFLAGS += ../../../Tools/FixPointMath.c
 LDFLAGS += ../../../Tools/Statistics.c
 
-include $(MAKERULES)
