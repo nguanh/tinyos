@@ -39,6 +39,7 @@
  
 #include "Reporting.h"
 #include "Orinoco.h"
+#include "printf.h"
 
 #define MSG_BURST_LEN      1    // number of packets per period (#)
 #define DATA_PERIOD    30720UL  // data creation period (ms)
@@ -80,12 +81,15 @@ implementation {
 
     // start our packet timer
     //call Timer.startPeriodic(61440UL);
-    call Timer.startPeriodic(30720UL);  // 30s
+    call Timer.startPeriodic(3072UL);  // 3s
   }
 
   event void Timer.fired() {
     uint8_t  msgCnt;
 
+    printf("Sending packet %d ...\n",cnt);
+    printfflush();    
+    
     for (msgCnt = 0; msgCnt < MSG_BURST_LEN; msgCnt++) {
       nx_uint16_t * d;
 

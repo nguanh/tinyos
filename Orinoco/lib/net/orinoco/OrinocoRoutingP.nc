@@ -40,10 +40,12 @@
  */
 
 #include "Routing.h"
+#include "printf.h"
 
 module OrinocoRoutingP {
   uses {
     interface ActiveMessageAddress as AMA;
+    interface LocalTime<TMilli> as Clock;
   }
   provides {
     interface OrinocoRouting;
@@ -58,7 +60,6 @@ implementation {
   bool                     packetWaiting_ = FALSE;
   orinoco_routing_t        curRouting_;
   orinoco_bloom_pointers_t bp_;
-
   
   uint8_t calcHash(am_addr_t address, uint8_t seed) {
     uint32_t data = seed; 
@@ -81,10 +82,10 @@ implementation {
   // calculate offsets in Bloom Filter after every address change
   void updateHashes(void) {
     am_addr_t local = call AMA.amAddress();
-    dbg("Calculating hashes for local id %d\n", local);
+    printf("%lu: Calculating hashes for local id %d\n", call Clock.get(), local);
     for (i=0; i<BLOOM_HASHES; i++) {
       bp_.hashes[i] = calcHash(local, i);
-      dbg("Hash %d is %d\n", i, bp_.hashes[i]);
+      printf("Hash %d is %d\n", i, bp_.hashes[i]);
     }
   }
   
@@ -104,7 +105,7 @@ implementation {
     if (route.version > curRouting_.version || 
       ((curRouting_.version == 0xFFFF) && (route.version == 0))) {
       
-      dbg("update to routing version %u->%u\n",curRouting_.version,route.version);
+      printf("%lu: update to routing version %u->%u\n",call Clock.get(),curRouting_.version,route.version);
           
       // TODO check if this really needs to be copied or if we can use the pointer 
       curRouting_.version = route.version; // maybe memcpy is an alternative...
@@ -112,7 +113,7 @@ implementation {
 
       packetWaiting_ = checkForPresenceInFilter();
     } else {
-      dbg("received same routing filter again - ignoring...\n");
+      printf("%lu: received same routing filter again - ignoring...\n", call Clock.get());
     }
   }
   

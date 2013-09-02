@@ -99,6 +99,9 @@ implementation {
   OrinocoPacketDelayLayerC.SubReceive -> AM.Receive[ORINOCO_AM_DATA];
   OrinocoPacketDelayLayerC.SubPacket  -> AM;
 
+  components LocalTimeMilliC as Clock;
+  Mac.LocalTime -> Clock;
+  
   components new TimerMilliC() as Timer;
   Mac.Timer -> Timer;
 

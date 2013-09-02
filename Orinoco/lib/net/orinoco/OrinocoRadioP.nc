@@ -42,6 +42,7 @@
 #include "Orinoco.h"
 #include "OrinocoPlatform.h"
 #include "Statistics.h"
+#include "printf.h"
 
 module OrinocoRadioP {
   provides {
@@ -60,6 +61,7 @@ module OrinocoRadioP {
   uses {
     interface SplitControl as SubControl;
     interface Timer<TMilli>;
+    interface LocalTime<TMilli>;
 
     // sending and receiving
     interface Packet as SubPacket;
@@ -120,7 +122,7 @@ implementation {
     p->route = *(call Routing.getCurrentBloomFilter()); 
     
     // try sending
-    dbg("sending beacon to %u (routing version %d)\n", txBeaconDst_, curRouting_.version);
+    printf("%lu: sending beacon to %u (routing version %d)\n", call LocalTime.get(), txBeaconDst_, p->route.version);
     error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg));
 
     // reset beacon sending address (next one is no ack by default)
@@ -156,7 +158,7 @@ implementation {
     if (! accept) ps_.numIgnoredBeacons++;
 #endif
 
-    dbg("processing beacon, accept = %u\n", accept);
+    printf("%lu: processing beacon, accept = %u\n", call LocalTime.get(), accept);
 
     return accept;
   }

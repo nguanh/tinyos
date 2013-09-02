@@ -6,6 +6,7 @@ include ../Makefile.radioconfig
 CFLAGS += -DORINOCO_DEBUG_STATISTICS
 CFLAGS += -DDISABLE_SYNCED_MICRO
 CFLAGS += -DORINOCO_QUEUE_SIZE=1
+CFLAGS += -I$(TOSDIR)/lib/printf
 
 CFLAGS += \
 	-I . \

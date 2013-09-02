@@ -51,6 +51,9 @@ implementation {
   components OrinocoRoutingP;
   OrinocoRouting = OrinocoRoutingP;
   SplitControl = OrinocoRoutingP;
+
+  components LocalTimeMilliC as Clock;
+  OrinocoRoutingP.Clock -> Clock;
   
   components ActiveMessageAddressC as Address;
   OrinocoRoutingP.AMA -> Address;

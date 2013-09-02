@@ -37,6 +37,9 @@
  * @date December 14 2011
  */
 
+#define NEW_PRINTF_SEMANTICS
+#include "printf.h"
+
 configuration TestAppC {
 }
 implementation {
@@ -45,6 +48,11 @@ implementation {
   components OrinocoP;
   components new TimerMilliC();
 
+  // DEBUG These are required for printf - remove before flight
+  components PrintfC;
+  components SerialStartC;
+  
+  
   TestC.Boot              -> MainC.Boot;
   TestC.Timer             -> TimerMilliC;
   TestC.RadioControl      -> OrinocoP;
