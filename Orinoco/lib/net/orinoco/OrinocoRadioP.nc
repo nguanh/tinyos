@@ -598,7 +598,6 @@ implementation {
 #endif
 
       //RADIO_ASSERT(txDataMsg_ != NULL);
-      call Leds.led1Toggle();  // DEBUG
 
       // STEP 1
       // if the beacon is addressed to me, its an ack to txDataMsg_
@@ -757,7 +756,6 @@ implementation {
 #endif
 
     if (error == SUCCESS) {
-      call Leds.led2Toggle();  // DEBUG
       state_++;   // ok -> next state
     } else {
 #ifdef ORINOCO_DEBUG_PRINTF

@@ -59,7 +59,7 @@ implementation {
   OrinocoStatsReportingJobC.Packet -> OrinocoP;
   TestC.OrinocoStatsReportingMsg   -> OrinocoStatsReportingJobC;
 
-  components OrinocoDebugReportingJobC;
-  OrinocoDebugReportingJobC.Packet -> OrinocoP;
-  TestC.OrinocoDebugReportingMsg   -> OrinocoDebugReportingJobC;
+  //components OrinocoDebugReportingJobC;
+  //OrinocoDebugReportingJobC.Packet -> OrinocoP;
+  //TestC.OrinocoDebugReportingMsg   -> OrinocoDebugReportingJobC;
 }
