@@ -40,7 +40,6 @@
 // TODO
 // - snoop data packets and abort sending (while backing off),
 //   if packet directed to our target (?)
-// - integrate queue level (full/not full) into acks
 // - intermit forwarding after (long) time out
 
  
