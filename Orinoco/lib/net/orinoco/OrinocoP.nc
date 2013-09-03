@@ -86,12 +86,13 @@ implementation {
   MainC                -> Queue.Init;
 
   components OrinocoRadioC;
-  PacketDelayMilli  = OrinocoRadioC;
-  RadioControl      = OrinocoRadioC;
-  Queue.SubPacket  -> OrinocoRadioC;
-  Queue.SubReceive -> OrinocoRadioC.Receive;
-  Queue.SubSend    -> OrinocoRadioC;
+  PacketDelayMilli      = OrinocoRadioC;
+  RadioControl          = OrinocoRadioC;
+  Queue.SubPacket      -> OrinocoRadioC;
+  Queue.SubReceive     -> OrinocoRadioC.Receive;
+  Queue.SubSend        -> OrinocoRadioC;
   Queue.PacketDelayMilli -> OrinocoRadioC;
+  OrinocoRadioC.QueueStatus -> Queue;
 
   // config
   components OrinocoConfigC;

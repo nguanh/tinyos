@@ -39,9 +39,10 @@
  
 #include "Reporting.h"
 #include "Orinoco.h"
+#include "printf.h"
 
 #define MSG_BURST_LEN      1    // number of packets per period (#)
-#define DATA_PERIOD    30720UL  // data creation period (ms)
+#define DATA_PERIOD     30720UL  // data creation period (ms)
 #define QUEUE_LIMIT        1    // aggregattion degree (#)
 #define WAKEUP_INTVL    1024    // wake-up period (ms)
 
@@ -60,7 +61,7 @@ module TestC {
         
     // Orinoco Stats
     interface Receive as OrinocoStatsReportingMsg;
-    //interface Receive as OrinocoDebugReportingMsg;
+    interface Receive as OrinocoDebugReportingMsg;
   }
 }
 implementation {
@@ -94,6 +95,10 @@ implementation {
       d = call Packet.getPayload(&myMsg, sizeof(cnt));
       *d = cnt++;
 
+      // DEBUG
+      printf("%u app tx %u\n", TOS_NODE_ID, (uint16_t)*d);
+      printfflush();
+
       // and send it
       call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(cnt));
     }
@@ -110,12 +115,12 @@ implementation {
   
   /* ************************* ORINOCO STATS ************************* */
   event message_t * OrinocoStatsReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
-    call Send.send[CID_ORINOCO_STATS_REPORT](msg, len);  // packet is copied or rejected
+//    call Send.send[CID_ORINOCO_STATS_REPORT](msg, len);  // packet is copied or rejected
     return msg;
   }
 
-  /*event message_t * OrinocoDebugReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
-    call Send.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
+  event message_t * OrinocoDebugReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
+//    call Send.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
     return msg;
-  }*/
+  }
 }

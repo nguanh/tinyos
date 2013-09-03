@@ -36,86 +36,68 @@
  * @author Christian Renner
  * @date December 14 2011
  */
- 
+
+#include "AM.h"
 #include "Reporting.h"
-#include "Orinoco.h"
+#include "printf.h"
 
-#define MSG_BURST_LEN      1    // number of packets per period (#)
-#define DATA_PERIOD    30720UL  // data creation period (ms)
-#define QUEUE_LIMIT        1    // aggregattion degree (#)
-#define WAKEUP_INTVL    1024    // wake-up period (ms)
 
-#define AM_PERIODIC_PACKET  33  // packet type
-
-module TestC {
+module SinkP @safe() {
   uses {
     interface Boot;
-    interface Timer<TMilli>;
     interface SplitControl as RadioControl;
-    interface StdControl as ForwardingControl;
+    interface StdControl as RoutingControl;
     interface RootControl;
+
     interface OrinocoConfig;
-    interface Packet;
-    interface QueueSend as Send[collection_id_t];
-        
-    // Orinoco Stats
+
+    // radio
+    interface Packet as RadioPacket;
+    interface CollectionPacket;
+    interface Receive as RadioReceive[collection_id_t];
+    interface QueueSend as RadioSend[collection_id_t];
+
+    interface PacketDelay<TMilli> as PacketDelayMilli;
+
     interface Receive as OrinocoStatsReportingMsg;
-    //interface Receive as OrinocoDebugReportingMsg;
+    interface Receive as OrinocoDebugReportingMsg;
+
+    interface Leds;
   }
 }
-implementation {
-  message_t  myMsg;
-  uint16_t  cnt = 0;
 
+implementation
+{
   event void Boot.booted() {
-    // we're no root, just make sure
-    call RootControl.unsetRoot();  // make this node a root
 
-    // switch on radio and enable routing
+    // set static wake-up interval for orinoco
+    call OrinocoConfig.setWakeUpInterval(256); // ms
+
+    call RootControl.setRoot();
+    call RoutingControl.start();
     call RadioControl.start();
-    call ForwardingControl.start();
-    
-    call OrinocoConfig.setWakeUpInterval(WAKEUP_INTVL);  
-    call OrinocoConfig.setMinQueueSize(1);
-
-    // start our packet timer
-    call Timer.startPeriodic(DATA_PERIOD);
   }
 
-  event void Timer.fired() {
-    uint8_t  msgCnt;
-
-    for (msgCnt = 0; msgCnt < MSG_BURST_LEN; msgCnt++) {
-      nx_uint16_t * d;
-
-      // prepare message
-      call Packet.clear(&myMsg);
-      
-      d = call Packet.getPayload(&myMsg, sizeof(cnt));
-      *d = cnt++;
-
-      // and send it
-      call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(cnt));
-    }
-  }
-
-  event void RadioControl.startDone(error_t error) {
-    // nothing
-  }
-
-  event void RadioControl.stopDone(error_t error) {
-    // nothing
-  }
-  
-  
-  /* ************************* ORINOCO STATS ************************* */
   event message_t * OrinocoStatsReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
-    call Send.send[CID_ORINOCO_STATS_REPORT](msg, len);  // packet is copied or rejected
+    //call RadioSend.send[CID_ORINOCO_STATS_REPORT](msg, len);  // packet is copied or rejected
     return msg;
   }
 
-  /*event message_t * OrinocoDebugReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
-    call Send.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
+  event message_t * OrinocoDebugReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
+    //call RadioSend.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
     return msg;
-  }*/
+  }
+
+  event void RadioControl.startDone(error_t error) {}
+
+  event void RadioControl.stopDone(error_t error) {}
+
+
+
+  event message_t *
+  RadioReceive.receive[collection_id_t](message_t * msg, void * payload, uint8_t len) {
+    printf("%u app rx %u %u\n", TOS_NODE_ID, call CollectionPacket.getOrigin(msg), (uint16_t)(*(nx_uint16_t*)payload));
+    printfflush();
+    return msg;
+  }
 }

@@ -55,6 +55,7 @@ configuration OrinocoRadioC {
     interface PacketDelay<TMilli> as PacketDelayMilli;
   }
   uses {
+    interface QueueStatus;
     interface OrinocoPathCost;
     interface OrinocoTrafficUpdates as TrafficUpdates;
     interface OrinocoTrafficStatistics as TrafficStatistics;
@@ -67,6 +68,7 @@ implementation {
   Packet            = Mac;
   Send              = Mac;
   Receive           = Mac;
+  QueueStatus       = Mac;
   OrinocoPathCost   = Mac;
   TrafficUpdates    = Mac;
   TrafficStatistics = Mac;
