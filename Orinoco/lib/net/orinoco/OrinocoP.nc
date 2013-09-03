@@ -38,6 +38,7 @@
  */
 
 #include "Orinoco.h"
+#include "Routing.h"
 #include "Timer.h"
 
 #ifdef PACKET_LINK
@@ -54,7 +55,9 @@ configuration OrinocoP {
     interface RootControl;
     interface StdControl as ForwardingControl;  // enable forwarding (sending)
     interface SplitControl as RadioControl;     // enable radio
-
+    interface OrinocoRoutingClient;             
+    interface OrinocoRoutingRoot;    
+    
     // send and receive
     interface QueueSend as Send[collection_id_t id];
     interface Receive[collection_id_t id];
@@ -93,6 +96,10 @@ implementation {
   Queue.SubSend    -> OrinocoRadioC;
   Queue.PacketDelayMilli -> OrinocoRadioC;
 
+  // routing
+  OrinocoRoutingRoot   = OrinocoRadioC;
+  OrinocoRoutingClient = OrinocoRadioC;
+  
   // config
   components OrinocoConfigC;
   OrinocoConfig = OrinocoConfigC;

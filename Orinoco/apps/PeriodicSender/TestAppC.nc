@@ -61,6 +61,7 @@ implementation {
   TestC.RootControl       -> OrinocoP;
   TestC.Packet            -> OrinocoP;
   TestC.OrinocoConfig     -> OrinocoP;
+  TestC.OrinocoRouting    -> OrinocoP;
     
   // Orinoco internal reporting
   components OrinocoStatsReportingJobC;

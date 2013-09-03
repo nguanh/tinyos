@@ -58,6 +58,7 @@ implementation {
   components OrinocoP as Radio;
   SinkP.RootControl      -> Radio;
   SinkP.RoutingControl   -> Radio;
+  SinkP.OrinocoRoutingRoot->Radio;
   SinkP.RadioControl     -> Radio;
   SinkP.OrinocoConfig    -> Radio;
 

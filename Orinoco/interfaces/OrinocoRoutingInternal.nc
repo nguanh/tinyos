@@ -33,13 +33,15 @@
  */
 
 /**
- * Bidirectional routing abstraction.
+ * Bloom filter-based routing abstraction.
  *
  * @author Andreas Reinhardt
  * @date August 28, 2013
  */
- 
-interface OrinocoRouting {
+
+#include "Routing.h"
+
+interface OrinocoRoutingInternal {
 
   // notify routing of new incoming Bloom Filter
   command void updateBloomFilter(orinoco_routing_t newFilter);
@@ -47,8 +49,8 @@ interface OrinocoRouting {
   // get current filter for piggybacking on outbound messages
   command orinoco_routing_t* getCurrentBloomFilter(void);
   
-  // poll whether a new packet is available for collection at the sink
-  command bool packetWaitingForMe(void);
+  // does the Bloom filter indicate packets for us?
+  command bool packetAvailableForUs(void);
   
 }
 

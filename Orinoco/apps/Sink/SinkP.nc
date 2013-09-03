@@ -47,6 +47,8 @@ module SinkP @safe() {
     interface SplitControl as SerialControl;
     interface SplitControl as RadioControl;
     interface StdControl as RoutingControl;
+    interface OrinocoRoutingRoot;
+    
     interface RootControl;
 
     interface OrinocoConfig;
@@ -156,19 +158,28 @@ implementation
 
     call SerialControl.start();
 
-    //call AliveTimer.startPeriodic(15*60*1024UL);
+    call AliveTimer.startPeriodic(10240UL);
   }
 
   message_t  amsg;  // alive msg
 
+  // DEBUG: This is a current test implementation to see if recipients 
+  //        find themselves in the Bloom filter
+  am_addr_t addr = 0;
   event void AliveTimer.fired() {
+    call OrinocoRoutingRoot.addDestination(addr++);
+    if (addr == 32) {
+      call OrinocoRoutingRoot.resetRoutingFilter();
+      addr = 1;
+    }
+    
     //call RadioPacket.clear(&amsg);
     //call RadioSend.send[255](&amsg, 0);
 
     // restart SerialControl, if queue is full
-    if (uartFull) {
+    /*if (uartFull) {
       call SerialControl.stop();
-    }
+    }*/
   }
 
   event message_t * OrinocoStatsReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {

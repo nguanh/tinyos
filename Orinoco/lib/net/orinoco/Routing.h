@@ -44,8 +44,9 @@
 #define ROUTING_H
 
 enum {
-  BLOOM_BYTES = 8,
-  BLOOM_HASHES = 3
+  BLOOM_BYTES = 8,            // bytes in the Bloom filter (x8 for bits)
+  BLOOM_HASHES = 3,           // number of hashes to calculate per entry
+  BLOOM_VERSION_MAX = 0xFFF0  // maximum version number of filter
 };
 
 typedef struct {

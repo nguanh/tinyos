@@ -56,6 +56,7 @@ module TestC {
     interface StdControl as ForwardingControl;
     interface RootControl;
     interface OrinocoConfig;
+    interface OrinocoRoutingClient as OrinocoRouting;
     interface Packet;
     interface QueueSend as Send[collection_id_t];
         
@@ -66,8 +67,9 @@ module TestC {
 }
 implementation {
   message_t  myMsg;
-  uint16_t  cnt = 0;
-
+  uint16_t   cnt = 0;
+  bool       active = FALSE;
+  
   event void Boot.booted() {
     // we're no root, just make sure
     call RootControl.unsetRoot();  // make this node a root
@@ -97,7 +99,7 @@ implementation {
       call Packet.clear(&myMsg);
       
       d = call Packet.getPayload(&myMsg, sizeof(cnt));
-      *d = cnt++;
+      if (active) *d = cnt++;
 
       // and send it
       call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(cnt));
@@ -112,6 +114,13 @@ implementation {
     // nothing
   }
   
+  event void OrinocoRouting.newPacketNotification() {
+    active = TRUE;
+  }
+
+  event void OrinocoRouting.noMorePacketNotification() {
+    active = FALSE;
+  }
   
   /* ************************* ORINOCO STATS ************************* */
   event message_t * OrinocoStatsReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {

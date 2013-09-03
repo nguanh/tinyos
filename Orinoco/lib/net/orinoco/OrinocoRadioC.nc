@@ -48,6 +48,9 @@ configuration OrinocoRadioC {
     interface Send;
     interface Receive;
 
+    interface OrinocoRoutingRoot;
+    interface OrinocoRoutingClient;
+    
 // TODO multi
 //    // packet time stamping and delay calculation
 //    interface LocalTime<TRadio> as LocalTimeRadio;
@@ -108,8 +111,11 @@ implementation {
   components OrinocoConfigC;
   Mac.Config -> OrinocoConfigC;
 
+  // Bloom filter-based routing
   components OrinocoRoutingC;
-  Mac.Routing -> OrinocoRoutingC;
+  OrinocoRoutingRoot   = OrinocoRoutingC; // interface OrinocoRoutingRoot
+  OrinocoRoutingClient = OrinocoRoutingC; // interface OrinocoRoutingClient
+  Mac.Routing -> OrinocoRoutingC;         // interface OrinocoRoutingInternal
   SplitControl = OrinocoRoutingC;
   
   components RandomC;

@@ -75,8 +75,10 @@ module OrinocoRadioP {
     interface OrinocoPathCost as PathCost;
     interface LinkPacketMetadata;
 //    interface PacketField<uint8_t> as PacketRSSI;
-    interface OrinocoRouting as Routing;
- 
+
+    // routing
+    interface OrinocoRoutingInternal as Routing; 
+
     // configuration
     interface OrinocoConfig as Config;
     interface Random;
@@ -122,7 +124,9 @@ implementation {
     p->route = *(call Routing.getCurrentBloomFilter()); 
     
     // try sending
-    printf("%lu: sending beacon to %u (routing version %d)\n", call LocalTime.get(), txBeaconDst_, p->route.version);
+    printf("%lu: sending beacon to 0x%04x (routing version %d)\n", call LocalTime.get(), txBeaconDst_, p->route.version);
+    printfflush();
+    
     error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg));
 
     // reset beacon sending address (next one is no ack by default)
@@ -158,12 +162,12 @@ implementation {
     if (! accept) ps_.numIgnoredBeacons++;
 #endif
 
-    printf("%lu: processing beacon, accept = %u\n", call LocalTime.get(), accept);
-
+    //printf("%lu: processing beacon from 0x%04x, accept = %u\n", call LocalTime.get(), call SubAMPacket.source(msg), accept);
+    //printfflush();
+    
     return accept;
   }
-
-
+  
   /*** beacon preparation and sending ************************************/
   inline uint16_t getRandomSleepTime() {
     uint16_t   rdev;

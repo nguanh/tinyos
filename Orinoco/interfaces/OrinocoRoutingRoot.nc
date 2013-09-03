@@ -33,35 +33,24 @@
  */
 
 /**
- * Bidirectional routing abstraction.
+ * Bloom filter-based routing abstraction.
  *
  * @author Andreas Reinhardt
  * @date August 28, 2013
  */
- 
+
 #include "Routing.h"
 
-configuration OrinocoRoutingC {
-  provides {
-    interface OrinocoRoutingRoot;
-    interface OrinocoRoutingClient;
-    interface OrinocoRoutingInternal;
-    interface SplitControl;
-  }
-}
-implementation {
-  components OrinocoRoutingP;
-  OrinocoRoutingRoot     = OrinocoRoutingP;
-  OrinocoRoutingClient   = OrinocoRoutingP;
-  OrinocoRoutingInternal = OrinocoRoutingP;
-  SplitControl           = OrinocoRoutingP;
-
-  // DEBUG: Allow timestamping printf() messages
-  components LocalTimeMilliC as Clock;
-  OrinocoRoutingP.Clock -> Clock;
+interface OrinocoRoutingRoot {
   
-  // To re-calculate hashes on address change
-  components ActiveMessageAddressC as Address;
-  OrinocoRoutingP.AMA -> Address;
+  // reset local Bloom filter
+  command void resetRoutingFilter(void);
+
+  // reset local Bloom filter
+  command void resetAndAddDestination(am_addr_t address);
+  
+  // add new destination to local Bloom filter
+  command void addDestination(am_addr_t address);
+
 }
 
