@@ -60,7 +60,7 @@ module TestC {
         
     // Orinoco Stats
     interface Receive as OrinocoStatsReportingMsg;
-    //interface Receive as OrinocoDebugReportingMsg;
+    interface Receive as OrinocoDebugReportingMsg;
   }
 }
 implementation {
@@ -114,8 +114,8 @@ implementation {
     return msg;
   }
 
-  /*event message_t * OrinocoDebugReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
+  event message_t * OrinocoDebugReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
     call Send.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
     return msg;
-  }*/
+  }
 }
