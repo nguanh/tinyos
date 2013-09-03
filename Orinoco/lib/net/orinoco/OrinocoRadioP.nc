@@ -40,7 +40,6 @@
 // TODO
 // - snoop data packets and abort sending (while backing off),
 //   if packet directed to our target (?)
-// - integrate queue level (full/not full) into acks
 // - intermit forwarding after (long) time out
 
  
@@ -599,7 +598,6 @@ implementation {
 #endif
 
       //RADIO_ASSERT(txDataMsg_ != NULL);
-      call Leds.led1Toggle();  // DEBUG
 
       // STEP 1
       // if the beacon is addressed to me, its an ack to txDataMsg_
@@ -758,7 +756,6 @@ implementation {
 #endif
 
     if (error == SUCCESS) {
-      call Leds.led2Toggle();  // DEBUG
       state_++;   // ok -> next state
     } else {
 #ifdef ORINOCO_DEBUG_PRINTF
