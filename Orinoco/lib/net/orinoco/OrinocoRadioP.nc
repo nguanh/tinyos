@@ -37,6 +37,13 @@
  * @date December 14 2011
  */
 
+// TODO
+// - snoop data packets and abort sending (while backing off),
+//   if packet directed to our target (?)
+// - integrate queue level (full/not full) into acks
+// - intermit forwarding after (long) time out
+
+ 
 //#include <RadioAssert.h>
 #include "OrinocoBeaconMsg.h"
 #include "Orinoco.h"
@@ -60,6 +67,8 @@ module OrinocoRadioP {
   uses {
     interface SplitControl as SubControl;
     interface Timer<TMilli>;
+    
+    interface QueueStatus;
 
     // sending and receiving
     interface Packet as SubPacket;
@@ -86,19 +95,21 @@ module OrinocoRadioP {
 }
 implementation {
   // current dwelling time
-  uint8_t curCongestionWin_;
+  uint8_t      curCongestionWin_;
 
   // local buffer and state information for pending tx packet (if any)
-  error_t      txDataError_;
-  am_addr_t    txDataDst_;
+  error_t      txDataError_;     // error code for sending
+  am_addr_t    txDataDst_;       // destination for sending data
+  uint8_t      txDataExpSeqno_;  // expected beacon sequence number for ack
   uint8_t      txAttempts_ = 0;
   message_t  * txDataMsg_  = NULL;
   uint8_t      txDataLen_;
   uint8_t      txDataMaxBackoff_ = 0;
   message_t    txBeaconMsg_;
   am_addr_t    txBeaconDst_  = AM_BROADCAST_ADDR;
+  uint8_t      txBeaconSeqno_ = 0;  // current beacon sequence number
 
-  bool         beaconCancel_ = FALSE;
+  bool         beaconCancel_ = FALSE; // marks whether an attempt to send data was aborted due to a beacon (ack) reception
 
 #ifdef ORINOCO_DEBUG_STATISTICS
   orinoco_packet_statistics_t   ps_ = {0};
@@ -113,12 +124,22 @@ implementation {
 
     call SubPacket.clear(&txBeaconMsg_);
     p = call BeaconSubSend.getPayload(&txBeaconMsg_, sizeof(OrinocoBeaconMsg));
-    p->cost  = call PathCost.getCost();
-    p->cw    = curCongestionWin_;
+    p->cost   = call PathCost.getCost();
+    p->cw     = curCongestionWin_;
+    p->seqno  = txBeaconSeqno_++;
+    p->flags  = 0x00;
+    if (call QueueStatus.acceptsRemote()) {
+      p->flags |= ORINOCO_BEACON_FLAGS_ACCEPTSDATA;
+    }
 
     // try sending
     dbg("sending beacon to %u\n", txBeaconDst_);
     error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg));
+    
+#ifdef ORINOCO_DEBUG_PRINTF
+    printf("%u ori bs %u %u %u %p %u\n", TOS_NODE_ID, TOS_NODE_ID, txBeaconDst_, p->seqno, &txBeaconMsg_, error);
+    printfflush();
+#endif
 
     // reset beacon sending address (next one is no ack by default)
     txBeaconDst_ = AM_BROADCAST_ADDR;
@@ -132,16 +153,26 @@ implementation {
 
     // TODO this could be encapsulated by a stand-alone module to enable
     // different implementations
-    // FIXME experimental
+    // FIXME experimental (it's better hearing a bad beacon than nothing ...)
     if (TRUE) { //call LinkPacketMetadata.highChannelQuality(msg) || call PathCost.getCost() == ORINOCO_PATHCOST_INF) {
       OrinocoBeaconMsg * p = (OrinocoBeaconMsg *)call SubPacket.getPayload(msg, sizeof(OrinocoBeaconMsg *));
 
+      // check path cost (this must be always be the first call)
       accept = call PathCost.inspectBeacon(msg, p->cost, update);
+      
+      // check if sender is willing to accept additional data
+      // NOTE beacons serve as implicit acks. A sender may not be willing to
+      // receive additional packets if, e.g., its queue is full.
+      accept = accept && (p->flags & ORINOCO_BEACON_FLAGS_ACCEPTSDATA);
+      
+      // beacon accepted
       if (accept) {
         // if this beacon is acceptible, store sender id for (immediate) forwarding
         txDataDst_        = call SubAMPacket.source(msg);
         // store max. backoff (the back-offing is implemented in OrinocoForwardLayer)
         txDataMaxBackoff_ = p->cw;
+        // remember expected sequence number for the following ack ()
+        txDataExpSeqno_   = p->seqno + 1;
       }
     }
 
@@ -173,7 +204,6 @@ implementation {
 
 
   /*** state machine *****************************************************/
-  // TODO check which ones MUST have consecutive indices
   // those marked with a '+' must be consecutive (the one with the plus follow its predecessor)
   enum {
     OFF,                         //  we're off
@@ -188,7 +218,7 @@ implementation {
     RECEIVE_SUBSEND_DONE,        //+ waiting for SubSend.sendDone (sent beacon)
     RECEIVE_TIMER,               //+ set timer after beacon
     RECEIVE,                     //+ may receive data
-    RECEIVE_DONE,                //  current reception phase completed, TODO needed?
+    RECEIVE_DONE,                //  current reception phase completed
 
     FORWARD_SUBSTART,            //  shall call SubControl.start to forward data
     FORWARD_SUBSTART_DONE,       //+ waiting for SubControl.startDone
@@ -196,7 +226,7 @@ implementation {
     FORWARD,                     //  listen and wait for a beacon
     FORWARD_SUBSEND,             //  shall send data packet via SubSend.send
     FORWARD_SUBSEND_DONE,        //+ waiting for SubSend.sendDone
-    FORWARD_DONE,                //  packet has been sent, TODO what comes afterwards?
+    FORWARD_DONE,                //  packet has been sent
 
     SLEEP_SUBSTOP,               //  shall call SubControl.stop to sleep
     SLEEP_SUBSTOP_DONE,          //+ waiting for SubControl.stopDone
@@ -268,6 +298,11 @@ implementation {
       //RADIO_ASSERT(txDataMsg_ != NULL);
       txDataError_ = call DataSubSend.send(txDataDst_, txDataMsg_, txDataLen_);
 
+#ifdef ORINOCO_DEBUG_PRINTF
+      printf("%u ori ds %u %u %p %u\n", TOS_NODE_ID, TOS_NODE_ID, txDataDst_, txDataMsg_, txDataError_);
+      printfflush();
+#endif
+
       if (txDataError_ == SUCCESS) {
         state_ = FORWARD_SUBSEND_DONE;
       } else {
@@ -275,7 +310,7 @@ implementation {
         post transition();
       }
 
-    // shall send current packet
+    // shall send beacon
     } else if (state_ == RECEIVE_SUBSEND) {
       error = sendBeacon();
 
@@ -288,7 +323,7 @@ implementation {
 
     // forwarding phase completed -> sleep
     } else if (state_ == FORWARD_DONE) {
-      // TODO check: is anything else handled before?
+      // TODO check: is everything else handled before?
       state_ = SLEEP_SUBSTOP;
       post transition();
 
@@ -460,7 +495,7 @@ implementation {
     // The timer may fire within FORWARD_SUBSEND or FORWARD_SUBSEND_DONE,
     // which should be a very rare event! To avoid any additional complexity
     // of the state machine, we follow this course:
-    // Since we just received an acceptible beacon, let's try to get rid of
+    // Since we just received an acceptable beacon, let's try to get rid of
     // our data. We hence simply ignore the timer and let the corresponding
     // states (see above) handle the situation. Note that this requires
     // both states to check whether the timer is still running.
@@ -470,8 +505,8 @@ implementation {
 
     // node is sleeping
     if (state_ == SLEEP) {
-      //DEBUG printf("sleep timer\n");
       // no packet to send => try to receive, otherwise send first
+      // this should prevent us from sending beacons, if the queue is full (there is >= 1 packet!)
       if (txDataMsg_ == NULL) {
         // only try receiving, if path metric is known (i.e., is not infinite)
         if (call PathCost.getCost() == ORINOCO_PATHCOST_INF) {
@@ -480,7 +515,10 @@ implementation {
           state_ = RECEIVE_SUBSTART;
         }
       } else {
-        // FIXME when may this happen at all?
+        // if there is data, try to get rid of it first
+        // TODO this actually needs some tweaking:
+        // - never accept data if we need to send something
+        //   -> when we got stuck somehow (no forwarder), when should be accept data again?
         state_ = FORWARD_SUBSTART;
       }
 
@@ -526,50 +564,80 @@ implementation {
 
     post transition();
   }
+  
+  
+  /*** QueueStatus *******************************************************/
+  event void QueueStatus.dropped() {
+    // a packet received by the queue (upper layer) may be rejected
+    // in this case, we're inside DataSubReceive.receive and have just 
+    // initiated a propagation into state RECEIVE_SUBSEND
+    // if the current packet was discarded (rejected) by the queue, we
+    // leave the overall receiving state without sending an ack
+    // (the sender will quickly adopt a new parent itself!)
+    if (state_ == RECEIVE_SUBSEND) {
+      state_ = RECEIVE_DONE;
+    }
+  }
 
   
   /*** BeaconSubReceive **************************************************/
   //event message_t * BeaconSubReceive.receive(message_t * msg) {
   event message_t * BeaconSubReceive.receive(message_t * msg, void *, uint8_t) {
   
-    dbg("received beacon (checking further action)\n");
+      dbg("received beacon (checking further action)\n");
 
     // when receiving a beacon, ignore any other case than FORWARD
     // particularly do not update parent when a data packet has already been sent (ack pending)
     // schedules (back-offs may be different, resulting in timeout at receiver/parent)
     if (state_ == FORWARD) {
-      bool isAck = FALSE;
+      bool                isAck = FALSE;
+      OrinocoBeaconMsg  * p     = call BeaconSubSend.getPayload(msg, sizeof(OrinocoBeaconMsg));
+      
+#ifdef ORINOCO_DEBUG_PRINTF
+      printf("%u ori br %u %u %u %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), p->seqno, txDataDst_, txDataExpSeqno_, msg);
+      printfflush();
+#endif
 
       //RADIO_ASSERT(txDataMsg_ != NULL);
       call Leds.led1Toggle();  // DEBUG
 
       // STEP 1
       // if the beacon is addressed to me, its an ack to txDataMsg_
-      // TODO possibly check whether senderId == txDataDst_
       if (call SubAMPacket.address() == call SubAMPacket.destination(msg)) {
-        message_t  * txDataMsgTmp = txDataMsg_;
-        txDataMsg_ = NULL;  /* delete reference *before* signaling sendDone,
-                             * to allow a nested send-call */
-        // TODO change state if this takes too much time?
-        signal Send.sendDone(txDataMsgTmp, txDataError_);
-        isAck = TRUE;  // this beacon was an (implicit) ack!
+        // NOTE in theory, we could savely assume an ack here; however, in
+        // case of high traffic, we observed "phantom" acks (old acks being
+        // received a second time), so that we use beacon sequence numbers
+        // and check the beacon sender to reduce the risk of false positives
+        if (txDataDst_      == call SubAMPacket.source(msg) &&
+            txDataExpSeqno_ == p->seqno)
+        {
+          // OK, it really is an ack, so proceed
+          message_t  * txDataMsgTmp = txDataMsg_;
+          txDataMsg_ = NULL;  /* delete reference *before* signaling sendDone,
+                               * to allow a nested send-call */
 
-        // statistics, must be in this order!
-        call TrafficUpdates.updateTxBurst(FALSE);
-        call TrafficUpdates.updateForwardDelay(FALSE);
+          // signal upper layer, which may directly send another packet
+          signal Send.sendDone(txDataMsgTmp, txDataError_);
+          isAck = TRUE;  // this beacon was an (implicit) ack!
+
+          // statistics, must be in this order!
+          call TrafficUpdates.updateTxBurst(FALSE);
+          call TrafficUpdates.updateForwardDelay(FALSE);
+        
+        } else {
+          return msg;
+        }
       }
 
       // check whether to accept forwarding offer, if there is any packet.
       // order of this expression is intended (and required), since
       // processBeacon() will adapt the local weight (if possible)
-      // TODO why do we care for the result of processBeacon at all?
-      // -> it's an ack, so we were able to transmit before, why not continue anyway?
       if (processBeacon(msg, isAck) && txDataMsg_ != NULL) {
         // reset timer only if beacon was an ack
-        if (isAck) {
-          // convenient hack avoiding yet another state
-          call Timer.startOneShot(call Timer.getdt());
-        }
+        // this piece of code should be obsolete, so commented out
+        //if (isAck) {
+        //call Timer.startOneShot(call Timer.getdt());
+        //}
         state_ = FORWARD_SUBSEND;  // only send packet
         post transition();
       } else {
@@ -581,16 +649,20 @@ implementation {
         }
       }
     } else if (state_ == FORWARD_SUBSEND || state_ == FORWARD_SUBSEND_DONE) {
+#ifdef ORINOCO_DEBUG_PRINTF
+      OrinocoBeaconMsg  * p     = call BeaconSubSend.getPayload(msg, sizeof(OrinocoBeaconMsg));
+      printf("%u ori br %u %u %u %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), p->seqno, txDataDst_, txDataExpSeqno_, msg);
+      printfflush();
+#endif
+    
       // if the beacon is from our current tx-destination, but addressed to
       // someone else, we are too late and should re-schedule sending
       if (call SubAMPacket.source(msg) == txDataDst_ && ! call SubAMPacket.isForMe(msg)) {
         //RADIO_ASSERT(txDataMsg_ != NULL);
 
-        //DEBUG printf("ups (tx seqno %u, beac seqno %u)\n", ((orinoco_data_header_t *)(1 + call SubPacket.getPayload(txDataMsg_, txDataLen_)))->seqno, ((OrinocoBeaconMsg *)call SubPacket.getPayload(msg, sizeof(OrinocoBeaconMsg *)))->seqno); printfflush();
-
         if (state_ == FORWARD_SUBSEND) {
-          // we did not send yet (which is very unlikely), process beacon and resend or sit back
-          if (processBeacon(msg, FALSE)) {  // TODO when should this fail at all?
+          // we haven't sent yet, so process beacon and resend or sit back
+          if (processBeacon(msg, FALSE)) {
             state_ = FORWARD_SUBSEND;
             post transition();
           } else {
@@ -602,7 +674,7 @@ implementation {
             if (processBeacon(msg, FALSE)) {
               beaconCancel_ = TRUE;
             }
-          }          
+          }
         }
       }
     }
@@ -616,13 +688,19 @@ implementation {
   event message_t * DataSubReceive.receive(message_t * msg, void * payload, uint8_t len) {
     dbg("received data\n");
 
-    // received data outside receive => ignore for the moment (TODO?)
+    // received data outside receive => ignore to ease handling
     if (state_ == RECEIVE) {
       call Timer.stop();  // just received data, stop timer
+      
+#ifdef ORINOCO_DEBUG_PRINTF
+      printf("%u ori dr %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
+      printfflush();
+#endif
 
-      txBeaconDst_   = call SubAMPacket.source(msg);  // store sender of data for beacon ack
+      txBeaconDst_ = call SubAMPacket.source(msg);  // store sender of data for beacon ack
 
-      // TODO we *must* check if there is room in the queue (otherwise the packet cannot be stored and will be lost!
+      // FIXME we *must* check if there is room in the queue (otherwise the packet cannot be stored and will be lost!
+      // NOTE in general, we should not send beacons in this case at all!
       state_ = RECEIVE_SUBSEND;                  // and send another beacon
       post transition();
 
@@ -635,21 +713,28 @@ implementation {
 
       // we're done, so signal reception
       msg = signal Receive.receive(msg, payload, len);
+      
     } else if (state_ == RECEIVE_SUBSEND || state_ == RECEIVE_SUBSEND_DONE) {
-      //DEBUG printf("IGNORED");
       // we got another data packet that we cannot handle, so the congestion window
       // might have been too small
-      /* TODO check this
       // FIXME doing this here is problematic, because the congestion time in the next beacon
       // and the current timer may be have different values! We need something to cope with that
-      if (curCongestionWin_ >= call Config.getMaxDwellTime() / 2) {
+      /*if (curCongestionWin_ >= call Config.getMaxDwellTime() / 2) {
         curCongestionWin_ = call Config.getMaxDwellTime();
       } else {
         curCongestionWin_ *= 2;
       }*/
       dbg("ignored data (NOT in receive state)\n");
+#ifdef ORINOCO_DEBUG_PRINTF
+      printf("%u ori di %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
+      printfflush();
+#endif
     } else {
       dbg("ignored data (NOT in receive state)\n");
+#ifdef ORINOCO_DEBUG_PRINTF
+      printf("%u ori di %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
+      printfflush();
+#endif
     }
 
     return msg;
@@ -676,6 +761,10 @@ implementation {
       call Leds.led2Toggle();  // DEBUG
       state_++;   // ok -> next state
     } else {
+#ifdef ORINOCO_DEBUG_PRINTF
+      printf("%u ori bf %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
+      printfflush();
+#endif
       state_ = SLEEP_SUBSTOP;  // could not send beacon, abort
     }
 
@@ -687,18 +776,26 @@ implementation {
   event void DataSubSend.sendDone(message_t * msg, error_t error) {
     //RADIO_ASSERT(state_ == FORWARD_SUBSEND_DONE);
     //RADIO_ASSERT(msg == txDataMsg_);
-//printf(" sent %u\n", error);
+
+#ifdef ORINOCO_DEBUG_PRINTF
+    if (error != SUCCESS) {
+      printf("%u ori df %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
+      printfflush();
+    }
+#endif
 
     // if the timer should not be running (which may happen if it fired
     // during either FORWARD_SUBSEND or FORWARD_SUBSEND_DONE, we extend it
     // to wait for the ack (or ~0ms to let Timer.fired() cope with the case)
-    if (! call Timer.isRunning()) {
+    // FIXME CR This makes no sense! Why should the timer be running at all?
+    // We should stop it here and reset it to make it do what we want ...
+    /*if (! call Timer.isRunning()) {
       if (error == SUCCESS) {
         call Timer.startOneShot(ORINOCO_ACK_WAITING_TIME);
       } else {
-        call Timer.startOneShot(0);  // TODO check
+        call Timer.startOneShot(0);
       }
-    }
+    }*/
 
 #ifdef ORINOCO_DEBUG_STATISTICS
     if (error == SUCCESS) {
@@ -711,7 +808,33 @@ implementation {
     // send was aborted by a beacon from current destination
     // (this happens, if some contender was faster than us!)
     // this flag asks us to immediately retry!
-    if (error == ECANCEL) {
+    // FIXME CR What happens, if the timer fires within these states ... ?
+    /*if (error == ECANCEL) {
+      if (beaconCancel_ == TRUE) {
+        beaconCancel_ = FALSE,
+        state_ = FORWARD_SUBSEND;
+        post transition();
+      } else {
+        state_ = FORWARD;   // sit there and wait again
+      }
+    } else {
+      state_ = FORWARD;   // sit there and wait again
+    }*/
+    
+    // check success of sending the packet
+    if (error == SUCCESS) {
+      state_ = FORWARD;   // sit there and wait again
+    
+      // sending went fine ...
+      if (call Timer.isRunning()) {
+        call Timer.stop();
+      }
+      call Timer.startOneShot(ORINOCO_ACK_WAITING_TIME);
+    
+    } else if (error == ECANCEL) {
+      // send was aborted by a beacon from current destination
+      // (this happens, if some contender was faster than us!)
+      // this flag asks us to immediately retry!
       if (beaconCancel_ == TRUE) {
         beaconCancel_ = FALSE,
         state_ = FORWARD_SUBSEND;
@@ -752,7 +875,7 @@ implementation {
     // for that might lead to collisions ...
     // => sending will be taken care of at the end of a reception phase
 
-    // TODO which states are acceptible?
+    // TODO which states are acceptable?
     // if I'm starting up the radio for a reception, switch to sending
     // FIXME -> deadlock? (if everybody is doing that)
     if (state_ == SLEEP_TIMER ||

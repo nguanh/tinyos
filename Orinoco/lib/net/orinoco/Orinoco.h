@@ -59,6 +59,7 @@ enum {
   ORINOCO_DFLT_WAKEUP_DEVIATION   =   10,  /* percent */
   ORINOCO_DFLT_NUM_WAITING_INTVL  =    3,  /* multiple, absolute number */
   ORINOCO_DFLT_MIN_QUEUE_LEVEL    =    1,  /* min. number of packets in queue before forwarding */
+  ORINOCO_DFLT_QUEUE_LOCAL_RESERVE =   3   /* save 1/n spots in queue for local data */
 };
 
 /* collection data types */
@@ -115,7 +116,7 @@ typedef struct {
 #  define ORINOCO_QUEUE_SIZE          30
 #endif
 #ifndef ORINOCO_PACKETHISTORY_SIZE
-#  define ORINOCO_PACKETHISTORY_SIZE  30
+#  define ORINOCO_PACKETHISTORY_SIZE  10
 #endif
 
 #endif /* ORINOCO_H */

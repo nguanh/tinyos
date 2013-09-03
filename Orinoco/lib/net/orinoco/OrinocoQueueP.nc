@@ -56,6 +56,9 @@ module OrinocoQueueP {
     // packet
     interface Packet;
     interface CollectionPacket;
+    
+    // queue status
+    interface QueueStatus;
 
     // cache comparer for packet history
     interface CacheCompare<mc_entry_t>;
@@ -65,9 +68,6 @@ module OrinocoQueueP {
 #endif
   }
   uses {
-    // config
-    //interface OrinocoConfig;
-
     // MAC interface
     interface Packet as SubPacket;
     interface Send as SubSend;
@@ -133,9 +133,10 @@ implementation {
     {
       mq_entry_t  qe = call SendQueue.head();
       if (SUCCESS == call SubSend.send(qe.msg, call SubPacket.payloadLength(qe.msg))) {
-        // DEBUG
-        printf("%u que qs %p\n", TOS_NODE_ID, qe.msg);
+#ifdef ORINOCO_DEBUG_PRINTF
+        printf("%u que tx %p\n", TOS_NODE_ID, qe.msg);
         printfflush();
+#endif
       }
     }
   }
@@ -159,6 +160,13 @@ implementation {
 #ifdef ORINOCO_DEBUG_STATISTICS
       qs_.numPacketsDropped++;  // we are going to drop this packet
 #endif
+
+#ifdef ORINOCO_DEBUG_PRINTF
+      printf("%u que fx %p\n", TOS_NODE_ID, qe.msg);
+      printfflush();
+#endif
+
+      signal QueueStatus.dropped();
       return qe.msg;
     }
     
@@ -167,15 +175,23 @@ implementation {
 #ifdef ORINOCO_DEBUG_STATISTICS
       qs_.numPacketsDropped++;  // we are going to drop this packet
 #endif
+
+#ifdef ORINOCO_DEBUG_PRINTF
+      printf("%u que fx %p\n", TOS_NODE_ID, qe.msg);
+      printfflush();
+#endif
+      
       call MsgPool.put(msg);    // put new buffer back into queue and
+      signal QueueStatus.dropped();
       return qe.msg;            // reuse current buffer
     }
 
-    // DEBUG
-    printf("%u que qf %p\n", TOS_NODE_ID, msg);
+#ifdef ORINOCO_DEBUG_PRINTF
+    printf("%u que fw %p\n", TOS_NODE_ID, qe.msg);
     printfflush();
-
-    // FIXME this is a workaround only
+#endif
+    
+    // trigger sending the message
     post sendTask();
 
     // return new space for next reception
@@ -241,7 +257,9 @@ implementation {
    *         otherwise
    */
   command error_t Send.send[collection_id_t type](message_t * msg, uint8_t len) {
+#ifdef ORINOCO_DEBUG_PATH
     uint8_t                  i;
+#endif
     mq_entry_t               qe;
     orinoco_data_header_t  * h;
 
@@ -257,7 +275,13 @@ implementation {
     if (call SendQueue.size() == call SendQueue.maxSize()) {
 #ifdef ORINOCO_DEBUG_STATISTICS
       qs_.numPacketsDropped++;  // we are going to drop this packet
-#endif  
+#endif
+
+#ifdef ORINOCO_DEBUG_PRINTF
+      printf("%u que rj\n", TOS_NODE_ID);
+      printfflush();
+#endif
+      
       return FAIL;
     }
 
@@ -271,6 +295,12 @@ implementation {
 #ifdef ORINOCO_DEBUG_STATISTICS
       qs_.numPacketsDropped++;  // we are going to drop this packet
 #endif
+
+#ifdef ORINOCO_DEBUG_PRINTF
+      printf("%u que rj\n", TOS_NODE_ID);
+      printfflush();
+#endif
+      
       return FAIL;
     }
 
@@ -291,9 +321,10 @@ implementation {
 #endif
     h->type   = type;
 
-    // DEBUG
-    printf("%u que qi %u %u %u %p\n", TOS_NODE_ID, h->origin, h->seqno, h->hopCnt, msg);
+#ifdef ORINOCO_DEBUG_PRINTF
+    printf("%u que in %u %u %u %p\n", TOS_NODE_ID, h->origin, h->seqno, h->hopCnt, msg);
     printfflush();
+#endif
 
     // attach time of creation for delay tracking
     call PacketDelayMilli.init(msg);
@@ -312,6 +343,12 @@ implementation {
 #ifdef ORINOCO_DEBUG_STATISTICS
       qs_.numPacketsDropped++;  // we are going to drop this packet
 #endif
+
+#ifdef ORINOCO_DEBUG_PRINTF
+      printf("%u que xx\n", TOS_NODE_ID);
+      printfflush();
+#endif
+      
       dbg("Queue", "%s: send failed due to full queue", __FUNCTION__);
       call MsgPool.put(qe.msg);  // put unneeded buffer back into pool
       return FAIL;
@@ -365,9 +402,10 @@ implementation {
         call MsgPool.put(msg);
         call SendQueue.dequeue();
 
-        // DEBUG 
-        printf("%u que qd %p\n", TOS_NODE_ID, msg);
+#ifdef ORINOCO_DEBUG_PRINTF 
+        printf("%u que rm %p\n", TOS_NODE_ID, msg);
         printfflush();
+#endif
       } else {
         // TODO handle broken connections, retry count etc.
       }
@@ -383,6 +421,9 @@ implementation {
   SubReceive.receive(message_t * msg, void * payload, uint8_t len) {
     mc_entry_t               mc;
     orinoco_data_header_t  * h;
+    
+    // update receive statistics
+    call TrafficUpdates.updatePktReceptionIntvl();
 
     // get packet header
     h = getHeader(msg);
@@ -404,23 +445,26 @@ implementation {
     mc.seqno  = h->seqno;
     mc.hopCnt = call RootControl.isRoot() ? 0 : h->hopCnt;
 
-    // DEBUG    
-    printf("%u que qr %u %u %u %p\n", TOS_NODE_ID, h->origin, h->seqno, h->hopCnt, msg);
+#ifdef ORINOCO_DEBUG_PRINTF
+    printf("%u que rx %u %u %u %p\n", TOS_NODE_ID, h->origin, h->seqno, h->hopCnt, msg);
     printfflush();
+#endif
 
     if (call PacketHistory.lookup(mc)) {
       dbg("Queue", "%s: sorted out duplicate", __FUNCTION__);
 #ifdef ORINOCO_DEBUG_STATISTICS
       qs_.numDuplicates++;  // this packet is a duplicate
 #endif
+
+#ifdef ORINOCO_DEBUG_PRINTF
+      printf("%u que q2 %u %u %u %p\n", TOS_NODE_ID, h->origin, h->seqno, h->hopCnt, msg);
+      printfflush();
+#endif
+      
       return msg;
     } else {
       call PacketHistory.insert(mc);
     }
-
-    // update receive statistics (we ignore duplicates here at the moment,
-    // though we should really check if that is smart or not)
-    call TrafficUpdates.updatePktReceptionIntvl();
 
     // If I'm a root, signal receive, forward otherwise
     if (call RootControl.isRoot()) {
@@ -451,7 +495,7 @@ implementation {
 
   command void * Packet.getPayload(message_t * msg, uint8_t len) {
     /* NOTE @see getHeader */
-    return call SubPacket.getPayload(msg, len +  sizeof(orinoco_data_header_t));
+    return call SubPacket.getPayload(msg, len + sizeof(orinoco_data_header_t));
   }
 
     
@@ -478,6 +522,23 @@ implementation {
 
   command void CollectionPacket.setSequenceNumber(message_t * msg, uint8_t seqno) {
     getHeader(msg)->seqno = seqno;
+  }
+  
+  
+  /***** QueueStatus *****************************************************/
+  command bool QueueStatus.acceptsRemote() {
+    
+    if (call RootControl.isRoot()) {
+      // sinks always accept remote data (no queueing)
+      return TRUE;
+    } else {
+      // always leave room for local packets
+      return (call SendQueue.maxSize() - call SendQueue.size()) >= call Config.getQueueLocalReserve();
+    }
+  }
+  
+  default event void QueueStatus.dropped() {
+    /* void */
   }
 
 
