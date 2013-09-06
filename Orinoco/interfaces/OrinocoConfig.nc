@@ -78,9 +78,15 @@ interface OrinocoConfig {
   command uint8_t getNumWaitingIntervals();
 
   // set queue level minimum before forwarding
-  command void setMinQueueSize(uint8_t m);
+  command error_t setMinQueueSize(uint8_t m);
   
   // get queue level minimum before forwarding
   command uint8_t getMinQueueSize();
+
+  // set number of queue slots reserved for local data
+  command error_t setQueueLocalReserve(uint8_t r);
+
+  // get number of queue slots reserved for local data
+  command uint8_t getQueueLocalReserve();
 }
 

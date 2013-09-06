@@ -51,6 +51,7 @@ implementation {
   uint8_t   alpha_, Tdmin_, Tdmax_;
   uint8_t   waitIntvl_;
   uint8_t   qmLvl_;
+  uint8_t   qlLvl_;
 
   void updateAbsDeviation() {
     Tsdev_ = (uint16_t)(((uint32_t)Ts_ * alpha_) / 100);
@@ -63,6 +64,7 @@ implementation {
     Tdmax_ = ORINOCO_DFLT_CONGESTION_WIN_MAX;
     waitIntvl_ = ORINOCO_DFLT_NUM_WAITING_INTVL;
     qmLvl_     = ORINOCO_DFLT_MIN_QUEUE_LEVEL;
+    qlLvl_     = ORINOCO_QUEUE_SIZE / ORINOCO_DFLT_QUEUE_LOCAL_RESERVE;
     updateAbsDeviation();
     return SUCCESS;
   }
@@ -113,16 +115,33 @@ implementation {
     return waitIntvl_;
   }
 
-  command void OrinocoConfig.setMinQueueSize(uint8_t m) {
+  command error_t OrinocoConfig.setMinQueueSize(uint8_t m) {
     // can neither be zero nor should it be too large (to avoid queue overflows)
     // half the overall queue size should be fine
-    if (m > 0 && m <= ORINOCO_QUEUE_SIZE / 2) {
-      qmLvl_ = m;
+    if (m == 0 || m > ORINOCO_QUEUE_SIZE / 2) {
+      return FAIL;
     }
+    
+    qmLvl_ = m;
+    return SUCCESS;
   }
   
   command uint8_t OrinocoConfig.getMinQueueSize() {
     return qmLvl_;
+  }
+  
+  command error_t OrinocoConfig.setQueueLocalReserve(uint8_t r) {
+    // local reserve must not exceed half the queue size
+    if (r > ORINOCO_QUEUE_SIZE / 2) {
+      return FAIL;
+    }
+    
+    qlLvl_ = r;
+    return SUCCESS;
+  }
+  
+  command uint8_t OrinocoConfig.getQueueLocalReserve() {
+    return qlLvl_;
   }
 }
 

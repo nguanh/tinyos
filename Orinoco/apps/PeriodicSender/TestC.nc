@@ -39,7 +39,6 @@
  
 #include "Reporting.h"
 #include "Orinoco.h"
-#include "printf.h"
 
 #define MSG_BURST_LEN      1    // number of packets per period (#)
 #define DATA_PERIOD    30720UL  // data creation period (ms)
@@ -62,7 +61,7 @@ module TestC {
         
     // Orinoco Stats
     interface Receive as OrinocoStatsReportingMsg;
-    interface Receive as OrinocoDebugReportingMsg;
+    //interface Receive as OrinocoDebugReportingMsg;
   }
 }
 implementation {
@@ -83,14 +82,16 @@ implementation {
 
     // start our packet timer
     //call Timer.startPeriodic(61440UL);
-    call Timer.startPeriodic(3072UL);  // 3s
+    call Timer.startPeriodic(DATA_PERIOD);
   }
 
   event void Timer.fired() {
     uint8_t  msgCnt;
 
+    #ifdef PRINTF_H
     printf("Sending packet %u ...\n",cnt);
     printfflush();    
+    #endif
     
     for (msgCnt = 0; msgCnt < MSG_BURST_LEN; msgCnt++) {
       nx_uint16_t * d;
@@ -128,8 +129,8 @@ implementation {
     return msg;
   }
 
-  event message_t * OrinocoDebugReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
+  /*event message_t * OrinocoDebugReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
     call Send.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
     return msg;
-  }
+  }*/
 }

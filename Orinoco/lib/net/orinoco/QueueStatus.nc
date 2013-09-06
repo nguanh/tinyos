@@ -1,6 +1,6 @@
 /* $Id: $ */
 /*
- * Copyright (c) 2011 Hamburg University of Technology (TUHH).
+ * Copyright (c) 2013 University of Luebeck.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,43 +34,29 @@
 
 /**
  * @author Christian Renner
- * @date December 14 2011
+ * @date September 2 2013
  */
 
-#ifdef USE_PRINTF
-  #define NEW_PRINTF_SEMANTICS
-  #include "printf.h"
-#endif
 
-configuration TestAppC {
-}
-implementation {
-  components MainC;
-  components TestC;
-  components OrinocoP;
-  components new TimerMilliC();
-
-  #ifdef PRINTF_H
-  components PrintfC;
-  components SerialStartC;
-  #endif
+interface QueueStatus {
+  /**
+   * check if the queue is full
+   *
+   * @return true, ; false, else
+   */
+  //command bool equal(cache_t ce, cache_t cmp);
   
-  TestC.Boot              -> MainC.Boot;
-  TestC.Timer             -> TimerMilliC;
-  TestC.RadioControl      -> OrinocoP;
-  TestC.ForwardingControl -> OrinocoP;
-  TestC.Send              -> OrinocoP.Send;
-  TestC.RootControl       -> OrinocoP;
-  TestC.Packet            -> OrinocoP;
-  TestC.OrinocoConfig     -> OrinocoP;
-  TestC.OrinocoRouting    -> OrinocoP;
-    
-  // Orinoco internal reporting
-  components OrinocoStatsReportingJobC;
-  OrinocoStatsReportingJobC.Packet -> OrinocoP;
-  TestC.OrinocoStatsReportingMsg   -> OrinocoStatsReportingJobC;
+  /**
+   * check if the queue accepts remote packets
+   *
+   * @return true, if accepting; false, else
+   */
+  command bool acceptsRemote();
 
-  //components OrinocoDebugReportingJobC;
-  //OrinocoDebugReportingJobC.Packet -> OrinocoP;
-  //TestC.OrinocoDebugReportingMsg   -> OrinocoDebugReportingJobC;
+  /**
+   * signaled, if a new (remote) packet cannot be stored in the queue
+   * this event must only be signaled from Receive.receive() !
+   */
+  event void dropped();
 }
+

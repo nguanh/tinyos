@@ -16,10 +16,10 @@ CFLAGS += \
 	-I ../../../EAJobs/interfaces \
 	-I ../../../EAJobs/lib \
 	-I ../../../Tools \
-    -I ../../../Reporting \
+	-I ../../../Reporting \
 	-I $(TOSDIR)/lib/net \
 	-I $(TOSDIR)/lib/printf \
-	
+
 ifeq ($(findstring $(PLATFORM),iris), iris)
 CFLAGS += \
 	-I ../../chips/rf230  \
@@ -40,4 +40,3 @@ $(error Platform "$(PLATFORM)" is not supported)
 endif
 
 LDFLAGS += ../../../Tools/Statistics.c
-
