@@ -72,7 +72,7 @@ implementation {
   
   event void Boot.booted() {
     // we're no root, just make sure
-    call RootControl.unsetRoot();  // make this node a root
+    call RootControl.unsetRoot();
 
     // switch on radio and enable routing
     call RadioControl.start();
@@ -89,7 +89,7 @@ implementation {
   event void Timer.fired() {
     uint8_t  msgCnt;
 
-    printf("Sending packet %d ...\n",cnt);
+    printf("Sending packet %u ...\n",cnt);
     printfflush();    
     
     for (msgCnt = 0; msgCnt < MSG_BURST_LEN; msgCnt++) {

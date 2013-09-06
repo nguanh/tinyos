@@ -6,7 +6,8 @@ include ../Makefile.radioconfig
 CFLAGS += -DORINOCO_DEBUG_STATISTICS
 CFLAGS += -DDISABLE_SYNCED_MICRO
 CFLAGS += -DORINOCO_QUEUE_SIZE=1
-CFLAGS += -I$(TOSDIR)/lib/printf
+
+#CFLAGS += -DUSE_PRINTF
 
 CFLAGS += \
 	-I . \
@@ -19,6 +20,7 @@ CFLAGS += \
 	-I ../../../Tools \
 	-I ../../../Reporting \
 	-I $(TOSDIR)/lib/net \
+	-I $(TOSDIR)/lib/printf \
 
 ifeq ($(findstring $(PLATFORM),iris), iris)
 CFLAGS += \

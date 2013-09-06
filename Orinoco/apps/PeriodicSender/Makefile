@@ -5,7 +5,8 @@ include ../Makefile.radioconfig
 
 CFLAGS += -DDISABLE_SYNCED_MICRO
 CFLAGS += -DORINOCO_DEBUG_STATISTICS
-CFLAGS += -I$(TOSDIR)/lib/printf
+
+CFLAGS += -DUSE_PRINTF
 
 CFLAGS += \
 	-I . \
@@ -15,9 +16,10 @@ CFLAGS += \
 	-I ../../../EAJobs/interfaces \
 	-I ../../../EAJobs/lib \
 	-I ../../../Tools \
-        -I ../../../Reporting \
+    -I ../../../Reporting \
 	-I $(TOSDIR)/lib/net \
-
+	-I $(TOSDIR)/lib/printf \
+	
 ifeq ($(findstring $(PLATFORM),iris), iris)
 CFLAGS += \
 	-I ../../chips/rf230  \

@@ -19,7 +19,7 @@ RF230CHANNEL=12
 $(info #######################################################)
 ifeq ($(PLATFORM),)
   $(warning Plaform variable unspecified)
-  $(error 'Makefile.radioconfig' must be included after $$(MAKERULES))
+  $(warning 'Makefile.radioconfig' must be included after $$(MAKERULES))
 else
 
   ifneq ($(strip $(PACKETLENGTH)),)

@@ -40,7 +40,6 @@
  */
 
 #include "Routing.h"
-#include "printf.h"
 
 module OrinocoRoutingP {
   uses {
@@ -86,11 +85,16 @@ implementation {
   // calculate offsets in Bloom Filter after change of local node address
   void updateHashes(void) {
     am_addr_t local = call AMA.amAddress();
-    printf("%lu: Calculating hashes for local id %d\n", call Clock.get(), local);
     for (i=0; i<BLOOM_HASHES; i++) {
       bp_.hashes[i] = calcHash(local, i);
-      printf("Hash %d is %d\n", i, bp_.hashes[i]);
     }
+        
+    #ifdef PRINTF_H
+    printf("%lu: Bloom filter hashes for address %d are: ", call Clock.get(), local);
+    for (i=0; i<BLOOM_HASHES; i++) printf("%d ", bp_.hashes[i]);
+    printf("\n");
+    printfflush();
+    #endif
   }
   
   // check if the node's local address is stored in the newly received filter
@@ -104,12 +108,27 @@ implementation {
         return FALSE;
       }
     }    
+    //#ifdef PRINTF_H
     //printf("%lu: There are messages waiting for us at the sink!\n", call Clock.get());
+    //#endif
     signal OrinocoRoutingClient.newPacketNotification();
     return TRUE;
   }
 
   /* BEACON RECEIVED ****************************************************************/
+  
+  void displayBloomFilter(void) {
+    #ifdef PRINTF_H
+    char dump[BLOOM_BYTES*8];
+    for (i=0;i<BLOOM_BYTES;i++) {
+      uint8_t j;
+      for (j=0;j<8;j++) {
+        dump[i*8+j] = (((curRouting_.bloom[i])&(0x80>>j))>0)?'1':'0';
+      }
+    }
+    printf("%lu: RX'ed BF (v%u): %s\n", call Clock.get(), curRouting_.version, dump);
+    #endif
+  }
   
   command void OrinocoRoutingInternal.updateBloomFilter(orinoco_routing_t route) {
     if (route.version == curRouting_.version) return; // No change
@@ -121,24 +140,22 @@ implementation {
        // about 2 hours before they will ignore beacons for another two hours...
        // half of 65536 possible beacons "divided by" 4 beacons/sec = 8192 seconds
       
+      #ifdef PRINTF_H
       printf("%lu: update to routing version %u->%u\n",call Clock.get(),curRouting_.version,route.version);
+      #endif
           
-      // TODO check if this really needs to be copied or if we can use the pointer 
       curRouting_.version = route.version; // maybe memcpy is an alternative...
       for (i=0;i<BLOOM_BYTES;i++) curRouting_.bloom[i] = route.bloom[i];
 
-      if (FALSE) { // Dumps Bloom filter over serial (lengthy operation, use with care)
-        char dump[BLOOM_BYTES*8];
-        for (i=0;i<BLOOM_BYTES;i++) {
-          uint8_t j;
-          for (j=0;j<8;j++) {
-            dump[i*8+j] = (((curRouting_.bloom[i])&(0x80>>j))>0)?'1':'0';
-          }
-        }
-        printf("%lu: RX'ed BF (v%u): %s\n", call Clock.get(), route.version, dump);
-      }
-
+      //displayBloomFilter();
+      
       packetWaiting_ = checkForPresenceInFilter();
+    } else {
+      // Neighbor has outdated BF information - ensure to get him up to date soon!
+      
+      // TODO: If we transmit BF-less beacons for energy reasons, we must make sure to
+      //       set a flag here to transmit a set of full beacons next to bring the
+      //       neighbor up-to-date.
     }
   }
   
@@ -146,14 +163,14 @@ implementation {
     return &curRouting_;
   }
   
-  // legacy (non-event) interface to poll whether data is available for us
+  // legacy (non event-based) interface to poll whether data is available for us
   command bool OrinocoRoutingInternal.packetAvailableForUs(void) {
     return packetWaiting_;
   }
 
   /* BLOOM FILTER ADDITION/REMOVAL **************************************************/
   
-  // set bit in Bloom filter
+  // set bit in Bloom filter, return if it was already set before (not currently used)
   bool setBitInFilter(uint16_t offset) {
     bool result = FALSE;
     uint8_t offsetByte, offsetBit;
@@ -172,6 +189,7 @@ implementation {
   // add node ID to Bloom filter
   void addToBloomFilter(am_addr_t address) {
     for (i=0; i<BLOOM_HASHES; i++) {
+      // TODO What to do upon hash collisions (hashes for ID 0 are 30, 30, 39)??
       setBitInFilter(calcHash(address, i));
     }
   }
@@ -217,7 +235,9 @@ implementation {
   
   // ahm, if no one wants our new packet notifications, just discard them
   default event void OrinocoRoutingClient.newPacketNotification() {
+    //#ifdef PRINTF_H
     //printf("Are you sure you are not interested in new packet notifications???\n");
+    //#endif
   }
   default event void OrinocoRoutingClient.noMorePacketNotification() {}
 

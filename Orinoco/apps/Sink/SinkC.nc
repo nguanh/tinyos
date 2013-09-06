@@ -37,8 +37,10 @@
  * @date December 14 2011
  */
 
-#define NEW_PRINTF_SEMANTICS
-#include "printf.h"
+#ifdef USE_PRINTF
+  #define NEW_PRINTF_SEMANTICS
+  #include "printf.h"
+#endif
 
 configuration SinkC {
 }
@@ -48,9 +50,10 @@ implementation {
   components MainC;
   SinkP.Boot             -> MainC;
 
-  // DEBUG These are required for printf - remove before flight
+#ifdef PRINTF_H
   components PrintfC;
   components SerialStartC;
+#endif
   
   components new TimerMilliC() as AliveTimer;
   SinkP.AliveTimer -> AliveTimer;

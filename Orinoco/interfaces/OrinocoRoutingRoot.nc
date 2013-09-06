@@ -46,7 +46,7 @@ interface OrinocoRoutingRoot {
   // reset local Bloom filter
   command void resetRoutingFilter(void);
 
-  // reset local Bloom filter
+  // reset local Bloom filter and populate with single destination address
   command void resetAndAddDestination(am_addr_t address);
   
   // add new destination to local Bloom filter

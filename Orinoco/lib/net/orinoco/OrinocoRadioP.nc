@@ -42,7 +42,6 @@
 #include "Orinoco.h"
 #include "OrinocoPlatform.h"
 #include "Statistics.h"
-#include "printf.h"
 
 module OrinocoRadioP {
   provides {
@@ -124,8 +123,10 @@ implementation {
     p->route = *(call Routing.getCurrentBloomFilter()); 
     
     // try sending
-    printf("%lu: sending beacon to 0x%04x (routing version %d)\n", call LocalTime.get(), txBeaconDst_, p->route.version);
-    printfflush();
+    #ifdef PRINTF_H
+      printf("%lu: sending beacon to 0x%04x (routing version %d)\n", call LocalTime.get(), txBeaconDst_, p->route.version);
+      printfflush();
+    #endif
     
     error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg));
 
@@ -441,7 +442,7 @@ implementation {
     //RADIO_ASSERT(state_ == FORWARD_SUBSTART_DONE || state_ == RECEIVE_SUBSTART_DONE);
 
     if (error == SUCCESS) {
-      call Leds.led0On();
+      call Leds.led0Off();
       state_++;  // fine -> next state
     } else {
       state_--;  // retry
@@ -456,7 +457,7 @@ implementation {
     //RADIO_ASSERT(state_ == OFF_SUBSTOP_DONE || state_ == SLEEP_SUBSTOP_DONE);
 
     if (error == SUCCESS) {
-      call Leds.led0Off();
+      call Leds.led0On();
       state_++;  // fine -> next state
     } else {
       state_--;  // retry
