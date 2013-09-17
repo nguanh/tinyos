@@ -40,6 +40,7 @@
 #include "AM.h"
 #include "Serial.h"
 #include "Reporting.h"
+#include "MulticastCommands.h"
 
 module SinkP @safe() {
   uses {
@@ -158,18 +159,25 @@ implementation
 
     call SerialControl.start();
 
-    call AliveTimer.startPeriodic(10240UL);
+    call AliveTimer.startPeriodic(35120UL);
   }
 
   message_t  amsg;  // alive msg
 
   // DEBUG: This is a current test implementation to see if recipients 
   //        find themselves in the Bloom filter
-  am_addr_t addr = 0;
+  am_addr_t addr = 1;
+
   event void AliveTimer.fired() {
     call OrinocoRoutingRoot.addDestination(addr++);
-    if (addr == 32) {
-      call OrinocoRoutingRoot.resetRoutingFilter();
+
+    // Change command to execute by nodes
+    if (addr == 4)  {
+      call OrinocoRoutingRoot.setCommand(ORINOCO_MULTICAST_COMMAND_LED2);
+    } else if (addr == 8)  {
+      call OrinocoRoutingRoot.setCommand(ORINOCO_MULTICAST_COMMAND_LED3);
+    } else if (addr == 16) {
+      call OrinocoRoutingRoot.resetBloomFilter();
       addr = 1;
     }
     

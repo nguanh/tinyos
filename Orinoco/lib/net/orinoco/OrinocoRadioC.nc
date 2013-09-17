@@ -38,7 +38,6 @@
  */
 
 #include "Orinoco.h"
-#include "Routing.h"
 
 configuration OrinocoRadioC {
   provides {

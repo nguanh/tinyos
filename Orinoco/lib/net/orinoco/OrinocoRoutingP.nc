@@ -39,8 +39,6 @@
  * @date August 28, 2013
  */
 
-#include "Routing.h"
-
 module OrinocoRoutingP {
   uses {
     interface ActiveMessageAddress as AMA;
@@ -57,9 +55,15 @@ module OrinocoRoutingP {
 implementation {
   uint8_t i; // the classic, everybody should have one just in case
   
-  bool                     packetWaiting_ = FALSE;
+  bool                     packetWaiting_    = FALSE;
+  bool                     mustTxFullFilter_ = TRUE;
   orinoco_routing_t        curRouting_;
+  am_addr_t                localId_;
   orinoco_bloom_pointers_t bp_;
+
+  #ifdef ORINOCO_DEBUG_STATISTICS
+  uint32_t shortBcnTxCount_ = 0, longBcnTxCount_ = 0;
+  #endif
   
   /* HASH FUNCTION ******************************************************************/
   
@@ -84,13 +88,13 @@ implementation {
 
   // calculate offsets in Bloom Filter after change of local node address
   void updateHashes(void) {
-    am_addr_t local = call AMA.amAddress();
+    localId_ = call AMA.amAddress();
     for (i=0; i<BLOOM_HASHES; i++) {
-      bp_.hashes[i] = calcHash(local, i);
+      bp_.hashes[i] = calcHash(localId_, i);
     }
         
     #ifdef PRINTF_H
-    printf("%lu: Bloom filter hashes for address %d are: ", call Clock.get(), local);
+    printf("%lu: Bloom filter hashes for address %d are: ", call Clock.get(), localId_);
     for (i=0; i<BLOOM_HASHES; i++) printf("%d ", bp_.hashes[i]);
     printf("\n");
     printfflush();
@@ -108,10 +112,8 @@ implementation {
         return FALSE;
       }
     }    
-    //#ifdef PRINTF_H
-    //printf("%lu: There are messages waiting for us at the sink!\n", call Clock.get());
-    //#endif
-    signal OrinocoRoutingClient.newPacketNotification();
+
+    signal OrinocoRoutingClient.newCommandNotification(curRouting_.cmd);
     return TRUE;
   }
 
@@ -132,6 +134,15 @@ implementation {
   
   command void OrinocoRoutingInternal.updateBloomFilter(orinoco_routing_t route) {
     if (route.version == curRouting_.version) return; // No change
+
+    // TODO: Do we need to clear flags here when it is unsure whether the current filter
+    //       still has this node in its destination set?
+      
+    // We have either (1) received a newer version and need to re-broadcast it or
+    // (2) someone has sent an old beacon and we need to bring him up-to-date.
+    mustTxFullFilter_ = TRUE; 
+
+    if ((route.cmd & SHORT_BEACON) != 0) return; // short beacons contain no routing data
     
     // we need to check if the version number is higher UNLESS a wraparound occurred...
     if ((                      route.version  >  curRouting_.version)    ||
@@ -141,25 +152,34 @@ implementation {
        // half of 65536 possible beacons "divided by" 4 beacons/sec = 8192 seconds
       
       #ifdef PRINTF_H
-      printf("%lu: update to routing version %u->%u\n",call Clock.get(),curRouting_.version,route.version);
+      printf("%lu: update to routing version %u->%u (cmd: %u)\n", call Clock.get(), curRouting_.version, route.version, route.cmd);
+        #ifdef ORINOCO_DEBUG_STATISTICS
+        printf("TX'ed short beacons: %lu, TX'ed long beacons: %lu\n",
+               shortBcnTxCount_,longBcnTxCount_); 
+        #endif
+      printfflush();  
       #endif
-          
+      
+      curRouting_.cmd     = route.cmd;     // multicast group command
       curRouting_.version = route.version; // maybe memcpy is an alternative...
       for (i=0;i<BLOOM_BYTES;i++) curRouting_.bloom[i] = route.bloom[i];
-
       //displayBloomFilter();
-      
+    
       packetWaiting_ = checkForPresenceInFilter();
-    } else {
-      // Neighbor has outdated BF information - ensure to get him up to date soon!
-      
-      // TODO: If we transmit BF-less beacons for energy reasons, we must make sure to
-      //       set a flag here to transmit a set of full beacons next to bring the
-      //       neighbor up-to-date.
     }
   }
   
   command orinoco_routing_t* OrinocoRoutingInternal.getCurrentBloomFilter(void) {
+    // Set bit 0x80 to indicate short beacon without Bloom filter attached
+    if (mustTxFullFilter_) {
+      curRouting_.cmd &= 0x7F; // clear short beacon flag
+      #ifdef ORINOCO_DEBUG_STATISTICS
+      longBcnTxCount_++;
+    } else {
+      shortBcnTxCount_++; 
+      #endif
+    }
+    mustTxFullFilter_ = FALSE;
     return &curRouting_;
   }
   
@@ -201,7 +221,7 @@ implementation {
     } else curRouting_.version++;
   }
 
-  command void OrinocoRoutingRoot.resetRoutingFilter() {
+  command void OrinocoRoutingRoot.resetBloomFilter() {
     clearBloomFilter();  
     increaseRoutingVersion();
   }
@@ -214,6 +234,11 @@ implementation {
   command void OrinocoRoutingRoot.resetAndAddDestination(am_addr_t address) {
     clearBloomFilter();
     addToBloomFilter(address);
+    increaseRoutingVersion();
+  }
+
+  command void OrinocoRoutingRoot.setCommand(uint8_t cmd) {
+    curRouting_.cmd = cmd & 0x7F; // strip MSB to avoid accidental interpretation as data
     increaseRoutingVersion();
   }
   
@@ -234,12 +259,11 @@ implementation {
   command error_t SplitControl.stop() { return SUCCESS; }
   
   // ahm, if no one wants our new packet notifications, just discard them
-  default event void OrinocoRoutingClient.newPacketNotification() {
+  default event void OrinocoRoutingClient.newCommandNotification(uint8_t cmd) {
     //#ifdef PRINTF_H
-    //printf("Are you sure you are not interested in new packet notifications???\n");
+    //printf("Are you sure you are not interested in new data notifications???\n");
     //#endif
   }
   default event void OrinocoRoutingClient.noMorePacketNotification() {}
-
 }
 

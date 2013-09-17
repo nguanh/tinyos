@@ -39,8 +39,6 @@
  * @date August 28, 2013
  */
 
-#include "Routing.h"
-
 interface OrinocoRoutingInternal {
 
   // notify routing of new incoming Bloom Filter

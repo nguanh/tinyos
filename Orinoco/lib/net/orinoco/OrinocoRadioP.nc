@@ -134,16 +134,23 @@ implementation {
     if (call QueueStatus.acceptsRemote()) {
       p->flags |= ORINOCO_BEACON_FLAGS_ACCEPTSDATA;
     }
-    p->route = *(call Routing.getCurrentBloomFilter()); 
 
-    // try sending
     #ifdef PRINTF_H
-      printf("%lu: sending beacon to 0x%04x (routing version %d)\n", call LocalTime.get(), txBeaconDst_, p->route.version);
-      printfflush();
+      if (txBeaconDst_ != AM_BROADCAST_ADDR) {
+        printf("%lu: sending ACK beacon to 0x%04x (routing version %u, command %u)\n", 
+             call LocalTime.get(), txBeaconDst_, p->route.version, p->route.cmd);
+        printfflush();
+      }
     #endif
     
-    error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg));
-    
+    // Send short beacon (without Bloom filter) if corresponding header field is set
+    p->route = *(call Routing.getCurrentBloomFilter()); 
+    if (((p->route).cmd) & SHORT_BEACON) {
+      error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg) - BLOOM_BYTES);
+    } else {
+      error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg));
+    }
+
 #ifdef ORINOCO_DEBUG_PRINTF
     printf("%u ori bs %u %u %u %p %u\n", TOS_NODE_ID, TOS_NODE_ID, txBeaconDst_, p->seqno, &txBeaconMsg_, error);
     printfflush();
@@ -180,13 +187,12 @@ implementation {
         // store max. backoff (the back-offing is implemented in OrinocoForwardLayer)
         txDataMaxBackoff_ = p->cw;
         
-        // forwarded accepted beacon routing payload to routing subcomponent
-        call Routing.updateBloomFilter(p->route);
-
         // remember expected sequence number for the following ack ()
         txDataExpSeqno_   = p->seqno + 1;
-
       }
+      
+      // forwarded accepted beacon to routing subcomponent
+      call Routing.updateBloomFilter(p->route);
     }
 
 #ifdef ORINOCO_DEBUG_STATISTICS
@@ -839,9 +845,11 @@ implementation {
       state_ = FORWARD;   // sit there and wait again
     
       // sending went fine ...
+      
+      /* AR: Timers will automatically be stopped before restarting (cf. TEP102)
       if (call Timer.isRunning()) {
         call Timer.stop();
-      }
+      }*/
       call Timer.startOneShot(ORINOCO_ACK_WAITING_TIME);
     
     } else if (error == ECANCEL) {

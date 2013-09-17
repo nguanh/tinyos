@@ -39,8 +39,6 @@
  * @date August 28, 2013
  */
  
-#include "Routing.h"
-
 configuration OrinocoRoutingC {
   provides {
     interface OrinocoRoutingRoot;

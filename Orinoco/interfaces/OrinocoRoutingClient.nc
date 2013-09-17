@@ -39,12 +39,10 @@
  * @date August 28, 2013
  */
 
-#include "Routing.h"
-
 interface OrinocoRoutingClient {
 
-  // notify when a packet is available for collection
-  event void newPacketNotification(void);
+  // notify when a command has been received
+  event void newCommandNotification(uint8_t cmd);
 
   // notify when no packet needs to be collected any longer
   event void noMorePacketNotification(void);

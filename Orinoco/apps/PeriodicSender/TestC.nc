@@ -39,9 +39,10 @@
  
 #include "Reporting.h"
 #include "Orinoco.h"
+#include "MulticastCommands.h"
 
 #define MSG_BURST_LEN      1    // number of packets per period (#)
-#define DATA_PERIOD    30720UL  // data creation period (ms)
+#define DATA_PERIOD    10240UL  // data creation period (ms)
 #define QUEUE_LIMIT        1    // aggregattion degree (#)
 #define WAKEUP_INTVL    1024    // wake-up period (ms)
 
@@ -58,7 +59,8 @@ module TestC {
     interface OrinocoRoutingClient as OrinocoRouting;
     interface Packet;
     interface QueueSend as Send[collection_id_t];
-        
+    interface Leds;
+    
     // Orinoco Stats
     interface Receive as OrinocoStatsReportingMsg;
     //interface Receive as OrinocoDebugReportingMsg;
@@ -68,6 +70,7 @@ implementation {
   message_t  myMsg;
   uint16_t   cnt = 0;
   bool       active = FALSE;
+  uint32_t   delay = DATA_PERIOD;
   
   event void Boot.booted() {
     // we're no root, just make sure
@@ -81,16 +84,14 @@ implementation {
     call OrinocoConfig.setMinQueueSize(1);
 
     // start our packet timer
-    //call Timer.startPeriodic(61440UL);
-    call Timer.startPeriodic(DATA_PERIOD);
+    call Timer.startOneShot(delay);
   }
 
   event void Timer.fired() {
     uint8_t  msgCnt;
 
     #ifdef PRINTF_H
-    printf("Sending packet %u ...\n",cnt);
-    printfflush();    
+    printf("Trying to sending packet %u...",cnt);
     #endif
     
     for (msgCnt = 0; msgCnt < MSG_BURST_LEN; msgCnt++) {
@@ -100,11 +101,18 @@ implementation {
       call Packet.clear(&myMsg);
       
       d = call Packet.getPayload(&myMsg, sizeof(cnt));
-      if (active) *d = cnt++;
+      *d = cnt++;
 
       // and send it
       call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(cnt));
     }
+
+    #ifdef PRINTF_H
+    printf(" done.\n");
+    printfflush();    
+    #endif
+    
+    call Timer.startOneShot(delay);
   }
 
   event void RadioControl.startDone(error_t error) {
@@ -115,12 +123,54 @@ implementation {
     // nothing
   }
   
-  event void OrinocoRouting.newPacketNotification() {
-    active = TRUE;
+  event void OrinocoRouting.newCommandNotification(uint8_t cmd) {
+    #ifdef PRINTF_H
+      printf("New request: %s\n",getFunctionName(cmd));
+      printfflush();
+    #endif
+    
+    switch (cmd) {
+    case ORINOCO_MULTICAST_COMMAND_SAMPLE_FAST:
+      atomic {
+        call Timer.stop();
+        delay = DATA_PERIOD / 10;
+        call Timer.startOneShot(delay);
+      } 
+      break;
+    case ORINOCO_MULTICAST_COMMAND_SAMPLE_NORM:
+      atomic {
+        call Timer.stop();
+        delay = DATA_PERIOD;
+        call Timer.startOneShot(delay);
+      } 
+      break;
+    case ORINOCO_MULTICAST_COMMAND_SAMPLE_SLOW:
+      atomic {
+        call Timer.stop();
+        delay = DATA_PERIOD * 3;
+        call Timer.startOneShot(delay);
+      } 
+      break;
+    case ORINOCO_MULTICAST_COMMAND_LED1:
+      // Improvise, as LED0 is occupied by Orinoco
+      call Leds.led1Toggle(); call Leds.led2Toggle();
+      break;
+    case ORINOCO_MULTICAST_COMMAND_LED2:
+      call Leds.led1Toggle();
+      break;
+    case ORINOCO_MULTICAST_COMMAND_LED3:
+      call Leds.led2Toggle();
+      break;
+    default: break; // ignore unimplemented commands
+    }
   }
 
   event void OrinocoRouting.noMorePacketNotification() {
-    active = FALSE;
+    atomic {
+      call Timer.stop();
+      delay = DATA_PERIOD;
+      call Timer.startOneShot(delay);
+    } 
   }
   
   /* ************************* ORINOCO STATS ************************* */

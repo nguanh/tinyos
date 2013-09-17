@@ -38,7 +38,6 @@
  */
 
 #include "Orinoco.h"
-#include "Routing.h"
 #include "Timer.h"
 
 #ifdef PACKET_LINK

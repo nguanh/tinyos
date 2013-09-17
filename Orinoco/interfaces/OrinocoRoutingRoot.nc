@@ -39,15 +39,16 @@
  * @date August 28, 2013
  */
 
-#include "Routing.h"
-
 interface OrinocoRoutingRoot {
   
   // reset local Bloom filter
-  command void resetRoutingFilter(void);
+  command void resetBloomFilter(void);
 
   // reset local Bloom filter and populate with single destination address
   command void resetAndAddDestination(am_addr_t address);
+  
+  // set the command to be executed by multicast receiver group
+  command void setCommand(uint8_t cmd);
   
   // add new destination to local Bloom filter
   command void addDestination(am_addr_t address);
