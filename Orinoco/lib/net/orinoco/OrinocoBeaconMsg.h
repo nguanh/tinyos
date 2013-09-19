@@ -36,5 +36,11 @@ typedef nx_struct OrinocoBeaconMsg {
   orinoco_routing_t      route;     // Support for down-tree routing
 } OrinocoBeaconMsg;
 
+typedef nx_struct OrinocoCommandAckMsg {
+  nx_uint8_t             cmd;       // see orinoco_routing_t
+  nx_uint16_t            version;   // see orinoco_routing_t
+  nx_uint8_t             result;    // allow for return codes (SUCCESS=0 FAIL=1)
+} OrinocoCommandAckMsg;
+
 #endif 
 

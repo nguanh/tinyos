@@ -88,5 +88,7 @@ implementation {
   SinkP.OrinocoDebugReportingMsg   -> OrinocoDebugReportingJobC;
   
   components NoLedsC as LedsC;
-  SinkP.Leds             -> LedsC;
+  SinkP.Leds         -> LedsC;
+  components      UserButtonC;
+  SinkP.Notify -> UserButtonC;
 }

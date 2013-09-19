@@ -44,18 +44,18 @@
 #define MULTICASTCOMMANDS_H
 
 // Commands that can directly be executed by routed destination nodes
-// Bit 7 is reserved for routing layer internals and will always be stripped
+// Bit 7 is currently reserved for routing layer internals and will always be stripped
 typedef enum {
   ORINOCO_MULTICAST_COMMAND_SAMPLE_FAST  = 0x60, // 0110 0000
   ORINOCO_MULTICAST_COMMAND_SAMPLE_NORM  = 0x40, // 0100 0000
   ORINOCO_MULTICAST_COMMAND_SAMPLE_SLOW  = 0x20, // 0010 0000
-                                                 //  00 - keep sampling rate 
+                                                 //  00 - retain current sampling rate 
                                                  
   ORINOCO_MULTICAST_COMMAND_LED1         = 0x10, // 0001 0000
   ORINOCO_MULTICAST_COMMAND_LED2         = 0x08, // 0000 1000
   ORINOCO_MULTICAST_COMMAND_LED3         = 0x04, // 0000 0100
+  
   ORINOCO_MULTICAST_COMMAND_POLLCMD      = 0x02, // 0000 0010
-  ORINOCO_MULTICAST_COMMAND_TBD          = 0x01, // 0000 0001
 } orinoco_multicast_commands_t;
 
 #ifdef PRINTF_H
@@ -70,13 +70,12 @@ typedef enum {
     case ORINOCO_MULTICAST_COMMAND_SAMPLE_SLOW:
       return "Slow sampling"; break;
     case ORINOCO_MULTICAST_COMMAND_LED1:
-      return "LED 0 toggle"; break;
+      return "Activate LED 0"; break;
     case ORINOCO_MULTICAST_COMMAND_LED2:
-      return "LED 1 toggle"; break;
+      return "Activate LED 1"; break;
     case ORINOCO_MULTICAST_COMMAND_LED3:
-      return "LED 2 toggle"; break;
+      return "Activate LED 2"; break;
     case ORINOCO_MULTICAST_COMMAND_POLLCMD:
-    case ORINOCO_MULTICAST_COMMAND_TBD:
     default:
       return "Unsupported command"; break; 
     }  

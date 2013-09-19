@@ -39,6 +39,7 @@
 
 #include "AM.h"
 #include "Serial.h"
+#include <UserButton.h>
 #include "Reporting.h"
 #include "MulticastCommands.h"
 
@@ -81,6 +82,7 @@ module SinkP @safe() {
     interface Receive as OrinocoStatsReportingMsg;
     interface Receive as OrinocoDebugReportingMsg;
 
+    interface Notify<button_state_t>;
     interface Leds;
   }
 }
@@ -98,34 +100,22 @@ implementation
 
   uint8_t numDrop = 0, numFail = 0;
 
-  void successBlink() {
-    // nothing
-  }
-
-  void dropBlink() {
-    numDrop++;
-    call Leds.led1Toggle();
-  }
-
-  void failBlink() {
-    numFail++;
-    call Leds.led2Toggle();
-  }
-
-
+  void successBlink() { }
+  void dropBlink() { numDrop++; call Leds.led1Toggle(); }
+  void failBlink() { numFail++; call Leds.led2Toggle(); }
   task void uartSendTask();
   
-  message_t * qInsert(message_t * msg) {
-    message_t * ret = msg;
+  message_t* qInsert(message_t * msg) {
+    message_t* ret = msg;
 
     atomic {
-      if (! uartFull) {
+      if (!uartFull) {
         ret = uartQueue[uartIn];
         uartQueue[uartIn] = msg;
         uartIn = (uartIn + 1) % UART_QUEUE_LEN;
 
         if (uartIn == uartOut) uartFull = TRUE;
-        if (! uartBusy) {
+        if (!uartBusy) {
           post uartSendTask();
           uartBusy = TRUE;
         }
@@ -134,7 +124,6 @@ implementation
         dropBlink();
       }
     }
-
     return ret;
   }
 
@@ -153,41 +142,40 @@ implementation
     // set static wake-up interval for orinoco
     call OrinocoConfig.setWakeUpInterval(256); // ms
 
+    // bring the components up
     call RootControl.setRoot();
     call RoutingControl.start();
     call RadioControl.start();
-
     call SerialControl.start();
 
-    call AliveTimer.startPeriodic(35120UL);
+    // demo function
+    call Notify.enable();
+    call AliveTimer.startPeriodic(5120UL);
   }
-
-  message_t  amsg;  // alive msg
 
   // DEBUG: This is a current test implementation to see if recipients 
   //        find themselves in the Bloom filter
   am_addr_t addr = 1;
-
   event void AliveTimer.fired() {
     call OrinocoRoutingRoot.addDestination(addr++);
+  }
 
-    // Change command to execute by nodes
-    if (addr == 4)  {
-      call OrinocoRoutingRoot.setCommand(ORINOCO_MULTICAST_COMMAND_LED2);
-    } else if (addr == 8)  {
-      call OrinocoRoutingRoot.setCommand(ORINOCO_MULTICAST_COMMAND_LED3);
-    } else if (addr == 16) {
-      call OrinocoRoutingRoot.resetBloomFilter();
-      addr = 1;
+  // Cycle through currently supported commands by means of user button...
+  uint8_t n, cmd;
+  event void Notify.notify(button_state_t state) {
+    if (state == BUTTON_PRESSED) {
+      call Leds.led2On();
+    } else if (state == BUTTON_RELEASED) {
+      n++;
+      if (n>=7) { cmd = 0x60; n = 0; }
+      else cmd = 1<<n;
+      call OrinocoRoutingRoot.setCommand(cmd);
+      #ifdef PRINTF_H
+      printf("Change remote command to %u (%s)\n",cmd,getFunctionName(cmd));
+      printfflush();
+      #endif
+      call Leds.led2Off();
     }
-    
-    //call RadioPacket.clear(&amsg);
-    //call RadioSend.send[255](&amsg, 0);
-
-    // restart SerialControl, if queue is full
-    /*if (uartFull) {
-      call SerialControl.stop();
-    }*/
   }
 
   event message_t * OrinocoStatsReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {

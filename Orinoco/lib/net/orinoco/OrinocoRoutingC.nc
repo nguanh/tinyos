@@ -54,6 +54,10 @@ implementation {
   OrinocoRoutingInternal = OrinocoRoutingP;
   SplitControl           = OrinocoRoutingP;
 
+  components OrinocoP;
+  OrinocoRoutingP.Send  -> OrinocoP.Send;
+  OrinocoRoutingP.Packet-> OrinocoP;
+  
   // DEBUG: Allow timestamping printf() messages
   components LocalTimeMilliC as Clock;
   OrinocoRoutingP.Clock -> Clock;

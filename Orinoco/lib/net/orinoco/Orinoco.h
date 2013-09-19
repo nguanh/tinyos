@@ -49,8 +49,9 @@
 
 /* AM packet types */
 enum {
-  ORINOCO_AM_BEACON = 128,
-  ORINOCO_AM_DATA   = 129
+  ORINOCO_AM_BEACON  = 128,
+  ORINOCO_AM_DATA    = 129,
+  ORINOCO_AM_CMDCFRM = 130,
 };
 
 /* wake-up configuration (default values) */

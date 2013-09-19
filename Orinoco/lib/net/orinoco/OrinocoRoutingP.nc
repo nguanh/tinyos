@@ -43,6 +43,9 @@ module OrinocoRoutingP {
   uses {
     interface ActiveMessageAddress as AMA;
     interface LocalTime<TMilli> as Clock;
+    // allow us to autonomously confirm Bloom Filter commands
+    interface QueueSend as Send[collection_id_t];
+    interface Packet;
   }
   provides {
     interface OrinocoRoutingRoot;
@@ -53,8 +56,9 @@ module OrinocoRoutingP {
 }
 
 implementation {
-  uint8_t i; // the classic, everybody should have one just in case
-  
+  uint8_t    i;     // the classic, everybody should have one just in case
+  message_t  myMsg; // see above
+
   bool                     packetWaiting_    = FALSE;
   bool                     mustTxFullFilter_ = TRUE;
   orinoco_routing_t        curRouting_;
@@ -113,8 +117,27 @@ implementation {
       }
     }    
 
-    signal OrinocoRoutingClient.newCommandNotification(curRouting_.cmd);
+    signal OrinocoRoutingClient.newCommandNotification(curRouting_.cmd, curRouting_.version);
     return TRUE;
+  }
+  
+  void sendConfirmation(uint8_t cmd, uint16_t version, error_t status) {
+    OrinocoCommandAckMsg* payload = (OrinocoCommandAckMsg*) call Packet.getPayload(&myMsg, sizeof(OrinocoCommandAckMsg));
+    payload->cmd = cmd;
+    payload->version = version;
+    payload->result = status;
+
+    #ifdef PRINTF_H
+    printf("%lu: Confirm execution of command %u (version %u): %u\n", call Clock.get(), cmd, version, status);
+    printfflush();
+    #endif
+
+    call Send.send[ORINOCO_AM_CMDCFRM](&myMsg, sizeof(OrinocoCommandAckMsg));
+    // TBD: Do we need to care about return status (worst case: cmd is resent in next BF)
+  }
+  
+  command void OrinocoRoutingClient.confirmCommandExecution(uint8_t cmd, uint16_t version, error_t status) {
+    sendConfirmation(cmd, version, status);
   }
 
   /* BEACON RECEIVED ****************************************************************/
@@ -152,11 +175,13 @@ implementation {
        // half of 65536 possible beacons "divided by" 4 beacons/sec = 8192 seconds
       
       #ifdef PRINTF_H
-      printf("%lu: update to routing version %u->%u (cmd: %u)\n", call Clock.get(), curRouting_.version, route.version, route.cmd);
+      printf("%lu: update to routing version %u->%u\n", call Clock.get(), curRouting_.version, route.version);
+        /* 
         #ifdef ORINOCO_DEBUG_STATISTICS
         printf("TX'ed short beacons: %lu, TX'ed long beacons: %lu\n",
                shortBcnTxCount_,longBcnTxCount_); 
         #endif
+        */
       printfflush();  
       #endif
       
@@ -258,11 +283,12 @@ implementation {
   // nothing can stop us now...
   command error_t SplitControl.stop() { return SUCCESS; }
   
-  // ahm, if no one wants our new packet notifications, just discard them
-  default event void OrinocoRoutingClient.newCommandNotification(uint8_t cmd) {
-    //#ifdef PRINTF_H
-    //printf("Are you sure you are not interested in new data notifications???\n");
-    //#endif
+  // ahm, this is weird...
+  // OrinocoRoutingClient is used, but no one wants new command notifications?!
+  default event void OrinocoRoutingClient.newCommandNotification(uint8_t cmd, uint16_t version) {
+    // We could confirm that we cannot execute this command. Or just leave the
+    // interpretation of our missing response to the sink? 
+    // sendConfirmation(cmd, version, FAIL);
   }
   default event void OrinocoRoutingClient.noMorePacketNotification() {}
 }

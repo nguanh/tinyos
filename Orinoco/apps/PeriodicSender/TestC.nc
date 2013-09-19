@@ -89,92 +89,88 @@ implementation {
 
   event void Timer.fired() {
     uint8_t  msgCnt;
-
+    error_t  result;
+      
     #ifdef PRINTF_H
-    printf("Trying to sending packet %u...",cnt);
+    printf("Trying to send %u packet(s)...",MSG_BURST_LEN);
     #endif
     
     for (msgCnt = 0; msgCnt < MSG_BURST_LEN; msgCnt++) {
-      nx_uint16_t * d;
-
-      // prepare message
+      nx_uint16_t *d = call Packet.getPayload(&myMsg, sizeof(cnt));
       call Packet.clear(&myMsg);
-      
-      d = call Packet.getPayload(&myMsg, sizeof(cnt));
       *d = cnt++;
-
-      // and send it
-      call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(cnt));
+      result = call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(cnt));
     }
-
+      
     #ifdef PRINTF_H
-    printf(" done.\n");
+    if (result == SUCCESS) printf(" done.\n"); else printf(" FAIL!\n");
     printfflush();    
     #endif
     
     call Timer.startOneShot(delay);
   }
 
-  event void RadioControl.startDone(error_t error) {
-    // nothing
+  void restartTimer(uint32_t value) {
+    call Timer.startOneShot(value);
+    delay = value;
   }
 
-  event void RadioControl.stopDone(error_t error) {
-    // nothing
-  }
-  
-  event void OrinocoRouting.newCommandNotification(uint8_t cmd) {
+  event void OrinocoRouting.newCommandNotification(uint8_t cmd, uint16_t identifier) {
+    error_t returnCode;
+    
     #ifdef PRINTF_H
-      printf("New request: %s\n",getFunctionName(cmd));
+      printf("==> New cmd request: %s (version %u)\n",getFunctionName(cmd),identifier);
       printfflush();
     #endif
     
     switch (cmd) {
     case ORINOCO_MULTICAST_COMMAND_SAMPLE_FAST:
-      atomic {
-        call Timer.stop();
-        delay = DATA_PERIOD / 10;
-        call Timer.startOneShot(delay);
-      } 
+      restartTimer(DATA_PERIOD/10);
+      returnCode = SUCCESS;
       break;
     case ORINOCO_MULTICAST_COMMAND_SAMPLE_NORM:
-      atomic {
-        call Timer.stop();
-        delay = DATA_PERIOD;
-        call Timer.startOneShot(delay);
-      } 
+      restartTimer(DATA_PERIOD);
+      returnCode = SUCCESS;
       break;
     case ORINOCO_MULTICAST_COMMAND_SAMPLE_SLOW:
-      atomic {
-        call Timer.stop();
-        delay = DATA_PERIOD * 3;
-        call Timer.startOneShot(delay);
-      } 
+      restartTimer(DATA_PERIOD*3);
+      returnCode = SUCCESS;
       break;
     case ORINOCO_MULTICAST_COMMAND_LED1:
-      // Improvise, as LED0 is occupied by Orinoco
-      call Leds.led1Toggle(); call Leds.led2Toggle();
+      /* LED1 not available because it is used for Orinoco */
+      call Leds.led1Off(); call Leds.led2Off();
+      returnCode = SUCCESS;
       break;
     case ORINOCO_MULTICAST_COMMAND_LED2:
-      call Leds.led1Toggle();
+      call Leds.led1On(); call Leds.led2Off();
+      returnCode = SUCCESS;
       break;
     case ORINOCO_MULTICAST_COMMAND_LED3:
-      call Leds.led2Toggle();
+      call Leds.led2On(); call Leds.led1Off();
+      returnCode = SUCCESS;
       break;
-    default: break; // ignore unimplemented commands
+    /* NOT YET IMPLEMENTED:
+    case ORINOCO_MULTICAST_COMMAND_POLLCMD:
+      returnCode = SUCCESS;
+      break;*/
+    default: returnCode = FAIL;
     }
+
+    // call this if you want the node to acknowledge the execution of the command
+    call OrinocoRouting.confirmCommandExecution(cmd, identifier, returnCode);
   }
 
-  event void OrinocoRouting.noMorePacketNotification() {
-    atomic {
-      call Timer.stop();
-      delay = DATA_PERIOD;
-      call Timer.startOneShot(delay);
-    } 
+  event void OrinocoRouting.noMorePacketNotification() { 
+    /* This one is called when we have been removed from the multicast group */ 
   }
   
+  event void RadioControl.startDone(error_t error) { }
+
+  event void RadioControl.stopDone(error_t error) { }
+  
+
   /* ************************* ORINOCO STATS ************************* */
-  event message_t * OrinocoStatsReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
+  event message_t * OrinocoStatsReportingMsg.receive(message_t *msg, void *payload, uint8_t len) {
     call Send.send[CID_ORINOCO_STATS_REPORT](msg, len);  // packet is copied or rejected
     return msg;
   }

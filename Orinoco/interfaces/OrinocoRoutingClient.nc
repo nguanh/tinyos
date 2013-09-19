@@ -42,10 +42,13 @@
 interface OrinocoRoutingClient {
 
   // notify when a command has been received
-  event void newCommandNotification(uint8_t cmd);
+  event void newCommandNotification(uint8_t cmd, uint16_t identifier);
 
   // notify when no packet needs to be collected any longer
   event void noMorePacketNotification(void);
+
+  // notify when a command has been received
+  command void confirmCommandExecution(uint8_t cmd, uint16_t identifier, error_t status);
   
 }
 
