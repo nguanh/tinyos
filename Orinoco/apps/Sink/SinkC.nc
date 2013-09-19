@@ -83,9 +83,11 @@ implementation {
   OrinocoStatsReportingJobC.Packet -> Radio;
   SinkP.OrinocoStatsReportingMsg   -> OrinocoStatsReportingJobC;
 
+  #ifdef ORINOCO_DEBUG_STATISTICS
   components OrinocoDebugReportingJobC;
   OrinocoDebugReportingJobC.Packet -> Radio;
   SinkP.OrinocoDebugReportingMsg   -> OrinocoDebugReportingJobC;
+  #endif
   
   components NoLedsC as LedsC;
   SinkP.Leds         -> LedsC;

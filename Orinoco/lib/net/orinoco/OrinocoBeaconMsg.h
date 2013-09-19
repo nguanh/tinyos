@@ -19,7 +19,7 @@ typedef enum {
 
 typedef struct {
   uint8_t          hashes[BLOOM_HASHES]; // Offsets for each hash of local ID
-  // IMPORTANT:    Increase this to uint16_t when BLOOM_BYTES >= 32
+  // IMPORTANT:    Increase this to uint16_t when BLOOM_BYTES > 32
 } orinoco_bloom_pointers_t;
 
 typedef nx_struct {
