@@ -5,6 +5,7 @@ include ../Makefile.radioconfig
 
 CFLAGS += -DDISABLE_SYNCED_MICRO
 CFLAGS += -DORINOCO_DEBUG_STATISTICS
+CFLAGS += -DORINOCO_DEBUG_PATH
 
 CFLAGS += \
 	-I . \
