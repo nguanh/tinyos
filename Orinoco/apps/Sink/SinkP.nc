@@ -158,6 +158,10 @@ implementation
   am_addr_t addr = 1;
   event void AliveTimer.fired() {
     call OrinocoRoutingRoot.addDestination(addr++);
+    #ifdef PRINTF_H
+    printf("%u BF %02x\n", TOS_NODE_ID, addr);
+    printfflush();
+    #endif
   }
 
   // Cycle through currently supported commands by means of user button...

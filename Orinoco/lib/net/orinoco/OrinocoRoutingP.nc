@@ -128,7 +128,7 @@ implementation {
     payload->result = status;
 
     #ifdef PRINTF_H
-    printf("%lu: Confirm execution of command %u (version %u): %u\n", call Clock.get(), cmd, version, status);
+    printf("%lu: %u confirm execution of command %u (version %u): %u\n", call Clock.get(), TOS_NODE_ID, cmd, version, status);
     printfflush();
     #endif
 
@@ -155,8 +155,8 @@ implementation {
     #endif
   }
   
-  command void OrinocoRoutingInternal.updateBloomFilter(orinoco_routing_t route) {
-    if (route.version == curRouting_.version) return; // No change
+  command void OrinocoRoutingInternal.updateBloomFilter(const orinoco_routing_t * route) {
+    if (route->version == curRouting_.version) return; // No change
 
     // TODO: Do we need to clear flags here when it is unsure whether the current filter
     //       still has this node in its destination set?
@@ -165,17 +165,17 @@ implementation {
     // (2) someone has sent an old beacon and we need to bring him up-to-date.
     mustTxFullFilter_ = TRUE; 
 
-    if ((route.cmd & SHORT_BEACON) != 0) return; // short beacons contain no routing data
+    if (route->cmd & SHORT_BEACON) return; // short beacons contain no routing data
     
     // we need to check if the version number is higher UNLESS a wraparound occurred...
-    if ((                      route.version  >  curRouting_.version)    ||
-       ((curRouting_.version - route.version) >= (BLOOM_VERSION_MAX/2)))  {
+    if ((                      route->version  >  curRouting_.version)    ||
+       ((curRouting_.version - route->version) >= (BLOOM_VERSION_MAX/2)))  {
        // above wraparound workaround ensures that nodes can be disconnected for 
        // about 2 hours before they will ignore beacons for another two hours...
        // half of 65536 possible beacons "divided by" 4 beacons/sec = 8192 seconds
       
       #ifdef PRINTF_H
-      printf("%lu: update to routing version %u->%u\n", call Clock.get(), curRouting_.version, route.version);
+      printf("%lu: %u update to routing version %u->%u\n", call Clock.get(), TOS_NODE_ID, curRouting_.version, route->version);
         /* 
         #ifdef ORINOCO_DEBUG_STATISTICS
         printf("TX'ed short beacons: %lu, TX'ed long beacons: %lu\n",
@@ -185,22 +185,30 @@ implementation {
       printfflush();  
       #endif
       
+      // CR: deep copy anyway (array inside struct)
+      curRouting_ = *route;
+      // CR TODO maybe add a note that we want to keep the SHORT_flag unset?
+      /*
       curRouting_.cmd     = route.cmd;     // multicast group command
       curRouting_.version = route.version; // maybe memcpy is an alternative...
       for (i=0;i<BLOOM_BYTES;i++) curRouting_.bloom[i] = route.bloom[i];
+      */
+
       //displayBloomFilter();
     
       packetWaiting_ = checkForPresenceInFilter();
     }
   }
   
-  command orinoco_routing_t* OrinocoRoutingInternal.getCurrentBloomFilter(void) {
+  command const orinoco_routing_t* OrinocoRoutingInternal.getCurrentBloomFilter(void) {
     // Set bit 0x80 to indicate short beacon without Bloom filter attached
     if (mustTxFullFilter_) {
-      curRouting_.cmd &= 0x7F; // clear short beacon flag
+      curRouting_.cmd &= ~SHORT_BEACON; // clear short beacon flag
       #ifdef ORINOCO_DEBUG_STATISTICS
       longBcnTxCount_++;
     } else {
+      // CR: previous version never set the short beacon flag ...
+      curRouting_.cmd |= SHORT_BEACON; // set short beacon flag
       shortBcnTxCount_++; 
       #endif
     }
@@ -263,7 +271,8 @@ implementation {
   }
 
   command void OrinocoRoutingRoot.setCommand(uint8_t cmd) {
-    curRouting_.cmd = cmd & 0x7F; // strip MSB to avoid accidental interpretation as data
+    // CR why not set mustTxFullFilter_ = TRUE?
+    curRouting_.cmd = cmd & ~SHORT_BEACON; // strip MSB to avoid accidental interpretation as data
     increaseRoutingVersion();
   }
   
@@ -285,11 +294,14 @@ implementation {
   
   // ahm, this is weird...
   // OrinocoRoutingClient is used, but no one wants new command notifications?!
+  // CR: we don't have to provide a default implementation (though this would break backward compatibility .. ;-)
   default event void OrinocoRoutingClient.newCommandNotification(uint8_t cmd, uint16_t version) {
     // We could confirm that we cannot execute this command. Or just leave the
     // interpretation of our missing response to the sink? 
     // sendConfirmation(cmd, version, FAIL);
   }
+  
+  // CR what excatly is this?
   default event void OrinocoRoutingClient.noMorePacketNotification() {}
 }
 

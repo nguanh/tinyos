@@ -134,17 +134,21 @@ implementation {
     if (call QueueStatus.acceptsRemote()) {
       p->flags |= ORINOCO_BEACON_FLAGS_ACCEPTSDATA;
     }
+    p->route = *(call Routing.getCurrentBloomFilter());
 
     #ifdef PRINTF_H
       if (txBeaconDst_ != AM_BROADCAST_ADDR) {
-        printf("%lu: sending ACK beacon to 0x%04x (routing version %u, command %u)\n", 
-             call LocalTime.get(), txBeaconDst_, p->route.version, p->route.cmd);
+        printf("%lu: %u sending ACK beacon to 0x%04x (routing version %u, command %u, short %u)\n", 
+             call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, p->route.version, p->route.cmd, (p->route.cmd & SHORT_BEACON) ? 1 : 0);
+        printfflush();
+      } else {
+        printf("%lu: %u sending beacon (routing version %u, command %u, short %u)\n", 
+             call LocalTime.get(), TOS_NODE_ID, p->route.version, p->route.cmd, (p->route.cmd & SHORT_BEACON) ? 1 : 0);
         printfflush();
       }
     #endif
     
     // Send short beacon (without Bloom filter) if corresponding header field is set
-    p->route = *(call Routing.getCurrentBloomFilter()); 
     if (((p->route).cmd) & SHORT_BEACON) {
       error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg) - BLOOM_BYTES);
     } else {
@@ -192,7 +196,7 @@ implementation {
       }
       
       // forwarded accepted beacon to routing subcomponent
-      call Routing.updateBloomFilter(p->route);
+      call Routing.updateBloomFilter(&p->route);
     }
 
 #ifdef ORINOCO_DEBUG_STATISTICS
@@ -824,34 +828,13 @@ implementation {
     }
 #endif
 
-    // send was aborted by a beacon from current destination
-    // (this happens, if some contender was faster than us!)
-    // this flag asks us to immediately retry!
-    // FIXME CR What happens, if the timer fires within these states ... ?
-    /*if (error == ECANCEL) {
-      if (beaconCancel_ == TRUE) {
-        beaconCancel_ = FALSE,
-        state_ = FORWARD_SUBSEND;
-        post transition();
-      } else {
-        state_ = FORWARD;   // sit there and wait again
-      }
-    } else {
-      state_ = FORWARD;   // sit there and wait again
-    }*/
-    
     // check success of sending the packet
     if (error == SUCCESS) {
       state_ = FORWARD;   // sit there and wait again
     
-      // sending went fine ...
-      
-      /* AR: Timers will automatically be stopped before restarting (cf. TEP102)
-      if (call Timer.isRunning()) {
-        call Timer.stop();
-      }*/
+      // sending went fine ... wait for ACK      
       call Timer.startOneShot(ORINOCO_ACK_WAITING_TIME);
-    
+
     } else if (error == ECANCEL) {
       // send was aborted by a beacon from current destination
       // (this happens, if some contender was faster than us!)

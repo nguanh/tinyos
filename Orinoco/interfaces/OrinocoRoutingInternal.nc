@@ -42,10 +42,12 @@
 interface OrinocoRoutingInternal {
 
   // notify routing of new incoming Bloom Filter
-  command void updateBloomFilter(orinoco_routing_t newFilter);
+  // CR call-by-reference to avoid copying the struct
+  command void updateBloomFilter(const orinoco_routing_t * newFilter);
 
   // get current filter for piggybacking on outbound messages
-  command orinoco_routing_t* getCurrentBloomFilter(void);
+  // CR disallow pointer target (i.e., data) to be changed outside our scope
+  command const orinoco_routing_t * getCurrentBloomFilter(void);
   
   // does the Bloom filter indicate packets for us?
   command bool packetAvailableForUs(void);
