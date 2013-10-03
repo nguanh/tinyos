@@ -159,7 +159,7 @@ implementation
   event void AliveTimer.fired() {
     call OrinocoRoutingRoot.addDestination(addr);
     #ifdef PRINTF_H
-    printf("%u BF %02x\n", TOS_NODE_ID, addr);
+    printf("%u BFADD 0x%04x\n", TOS_NODE_ID, addr);
     printfflush();
     #endif
     addr++;

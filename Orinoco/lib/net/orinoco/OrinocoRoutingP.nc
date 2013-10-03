@@ -129,7 +129,7 @@ implementation {
     payload->result = status;
 
     #ifdef PRINTF_H
-    printf("%lu: 0x%04x confirm execution of command %u (version %u): %u\n", call Clock.get(), localId_, cmd, version, status);
+    printf("%lu: 0x%04x CMD %u VER %u RET %u\n", call Clock.get(), localId_, cmd, version, status);
     printfflush();
     #endif
 
@@ -185,9 +185,15 @@ implementation {
         #endif
       printfflush();  
       #endif
-      
-      // Save the received routing information
-      curRouting_ = *route; // SHORT flag unset, but may be toggled in getCurrentBloom...
+
+      // CR: deep copy anyway (array inside struct)
+      // This pointer operation did not work... ;-)
+      // curRouting_ = *route;
+
+	  // TODO Check if we can still use pointers here...
+      curRouting_.version = route->version; // maybe memcpy is an alternative...
+      curRouting_.cmd     = route->cmd;     // multicast group command
+      for (i=0;i<BLOOM_BYTES;i++) curRouting_.bloom[i] = route->bloom[i];
       curVersion_ = route->version; // store this separately to match future RX filters
       
       //displayBloomFilter();    
@@ -246,9 +252,13 @@ implementation {
   // after each modification of the Bloom filter, its version should be increased
   // and full transmissions of the Bloom filter triggered to update the neighbors
   void increaseRoutingVersion() {
-    if (curRouting_.version >= BLOOM_VERSION_MAX) {
+    if (curVersion_ >= BLOOM_VERSION_MAX) {
+      curVersion_ = 0;
       curRouting_.version = 0;
-    } else curRouting_.version++;
+    } else {
+      curVersion_++;
+      curRouting_.version++;
+    }
     numTxFullFilters_ = NUM_LONG_BEACONS;
   }
 
