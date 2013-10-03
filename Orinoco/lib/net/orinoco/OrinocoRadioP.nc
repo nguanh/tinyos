@@ -136,21 +136,22 @@ implementation {
     }
     p->route = *(call Routing.getCurrentBloomFilter());
 
-    #ifdef PRINTF_H
+    // This may be problematic because it emits a lot of data all the time...
+    #ifdef ORINOCO_DEBUG_PRINTF
       if (txBeaconDst_ != AM_BROADCAST_ADDR) {
-        printf("%lu: %u sending ACK beacon to 0x%04x (routing version %u, command %u, short %u)\n", 
-             call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, p->route.version, p->route.cmd, (p->route.cmd & SHORT_BEACON) ? 1 : 0);
-        printfflush();
+        printf("%lu: 0x%04x sending ACK beacon to 0x%04x (routing version %u, command %u, short %u)\n", 
+             call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, (p->route.version & ~SHORT_BEACON), p->route.cmd, (p->route.version & SHORT_BEACON) ? 1 : 0);
       } else {
-        printf("%lu: %u sending beacon (routing version %u, command %u, short %u)\n", 
-             call LocalTime.get(), TOS_NODE_ID, p->route.version, p->route.cmd, (p->route.cmd & SHORT_BEACON) ? 1 : 0);
-        printfflush();
+        printf("%lu: 0x%04x sending beacon (routing version %u, short %u)\n", 
+             call LocalTime.get(), TOS_NODE_ID, (p->route.version & ~SHORT_BEACON), (p->route.version & SHORT_BEACON) ? 1 : 0);
       }
+      printfflush();
     #endif
     
     // Send short beacon (without Bloom filter) if corresponding header field is set
-    if (((p->route).cmd) & SHORT_BEACON) {
-      error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg) - BLOOM_BYTES);
+    if (p->route.version & SHORT_BEACON) {
+      error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, 
+      	      sizeof(OrinocoBeaconMsg) - BLOOM_BYTES - 1); // strip cmd and bloom filter
     } else {
       error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg));
     }
@@ -195,7 +196,7 @@ implementation {
         txDataExpSeqno_   = p->seqno + 1;
       }
       
-      // forwarded accepted beacon to routing subcomponent
+      // forward beacon to routing subcomponent (regardless if accepted or not)
       call Routing.updateBloomFilter(&p->route);
     }
 
