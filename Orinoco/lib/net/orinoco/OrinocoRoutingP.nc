@@ -46,6 +46,7 @@ module OrinocoRoutingP {
     // allow us to autonomously confirm Bloom Filter commands
     interface QueueSend as Send[collection_id_t];
     interface Packet;
+    interface Random;
   }
   provides {
     interface OrinocoRoutingRoot;
@@ -60,15 +61,15 @@ implementation {
   message_t  myMsg; // see above
 
   bool                     packetWaiting_    = FALSE;
-  uint8_t                  numTxFullFilters_ = NUM_LONG_BEACONS;
+  uint8_t                  shortBeaconProbability_ = 0;
+  am_addr_t                lastBeaconDestination_;
+  am_addr_t                lastBeaconSource_;
   orinoco_routing_t        curRouting_;
   uint16_t                 curVersion_;
   am_addr_t                localId_;
   orinoco_bloom_pointers_t bp_;
 
-  #ifdef ORINOCO_DEBUG_STATISTICS
   uint32_t shortBcnTxCount_ = 0, longBcnTxCount_ = 0;
-  #endif
   
   /* HASH FUNCTION ******************************************************************/
   
@@ -156,16 +157,23 @@ implementation {
     #endif
   }
   
-  command void OrinocoRoutingInternal.updateBloomFilter(const orinoco_routing_t * route) {
-    if ((route->version & ~SHORT_BEACON) == curVersion_) return; // no update
+  command void OrinocoRoutingInternal.updateBloomFilter(const orinoco_routing_t * route, am_addr_t source) {
+    if ((route->version & ~SHORT_BEACON) == curVersion_) { // No update to current filter
+      // Increase probability to send short beacons (AIMD)
+      if (shortBeaconProbability_ < 16) shortBeaconProbability_++; 
+      return;
+    }
     
-    // TODO: Do we need to clear packet notification flags here when it is unsure whether
-    //       the current (=a newer) filter still has this node in its destination set?
+    // TBD: Do we need to clear packet notification flags here when it is unsure whether
+    //      the current (=a newer) filter still has this node in its destination set?
       
-    // We have either (1) received a newer version and need to re-broadcast it or
-    // (2) someone has sent an old beacon and we need to bring him up-to-date.
-    numTxFullFilters_ = NUM_LONG_BEACONS; // Send the next couple of beacons as long
+    // If we get here, there is either (1) a newer version of the Bloom filter and we need
+    // to re-broadcast it or (2) someone has sent a beacon indicating an old version and 
+    // we need to bring them up-to-date. Give them a chance to receive the newest state!
 
+    shortBeaconProbability_ >>= 1; // Increase likelihood of sending a long beacon (AIMD)
+    // TODO Find analytic optimum for decrement step. Or leave as is...
+    
     if (route->version & SHORT_BEACON) return; // short beacons contain no routing data
     
     // we need to check if the version number is higher UNLESS a wraparound occurred...
@@ -177,24 +185,20 @@ implementation {
       
       #ifdef PRINTF_H
       printf("%lu: 0x%04x BFUP %u -> %u\n", call Clock.get(), localId_, curVersion_, route->version);
-        #ifdef ORINOCO_DEBUG_STATISTICS
-        if ((shortBcnTxCount_ + longBcnTxCount_) % 100 == 0) {
-          printf("BCN 0x%04x: S %lu L %lu\n", localId_, 
-               shortBcnTxCount_,longBcnTxCount_); 
-        }
-        #endif
       printfflush();  
       #endif
 
       // CR: deep copy anyway (array inside struct)
       // This pointer operation did not work... ;-)
       // curRouting_ = *route;
-
 	  // TODO Check if we can still use pointers here...
       curRouting_.version = route->version; // maybe memcpy is an alternative...
       curRouting_.cmd     = route->cmd;     // multicast group command
       for (i=0;i<BLOOM_BYTES;i++) curRouting_.bloom[i] = route->bloom[i];
       curVersion_ = route->version; // store this separately to match future RX filters
+
+      lastBeaconSource_ = source;
+      lastBeaconDestination_ = 0;
       
       //displayBloomFilter();    
       
@@ -202,19 +206,29 @@ implementation {
     }
   }
   
-  command const orinoco_routing_t* OrinocoRoutingInternal.getCurrentBloomFilter(void) {
-    if (numTxFullFilters_ > 0) {
-      curRouting_.version &= ~SHORT_BEACON; // clear short beacon flag
-      numTxFullFilters_ = numTxFullFilters_ - 1;
-      #ifdef ORINOCO_DEBUG_STATISTICS
-      longBcnTxCount_++;
-      #endif
-    } else {
-      curRouting_.version |= SHORT_BEACON; // set short beacon flag
-      #ifdef ORINOCO_DEBUG_STATISTICS
+  command const orinoco_routing_t* OrinocoRoutingInternal.getCurrentBloomFilter(am_addr_t dest) {
+    // Short beacon magic...
+    if (dest == lastBeaconSource_      || // We learned our latest filter from this node
+        dest == lastBeaconDestination_ || // We have sent our filter to this node before
+       ((call Random.rand16() >> 12) < shortBeaconProbability_) ){ // match to line 163
+               
+      curRouting_.version |= SHORT_BEACON;  // set short beacon flag
       shortBcnTxCount_++; 
-      #endif
+    } else {
+      curRouting_.version &= ~SHORT_BEACON; // clear short beacon flag
+      if (dest != AM_BROADCAST_ADDR) {
+        lastBeaconDestination_ = dest;        // memorize: this one has received full filter
+      }
+      longBcnTxCount_++;
     }
+
+    #ifdef PRINTF_H
+    if ((shortBcnTxCount_ + longBcnTxCount_) % 100 == 0) {
+      printf("BCN 0x%04x: SH %lu LO %lu\n", localId_, shortBcnTxCount_,longBcnTxCount_); 
+    }
+    printfflush();  
+    #endif
+    
     return &curRouting_;
   }
   
@@ -259,7 +273,8 @@ implementation {
       curVersion_++;
       curRouting_.version++;
     }
-    numTxFullFilters_ = NUM_LONG_BEACONS;
+    shortBeaconProbability_ = 0; 
+    lastBeaconDestination_ = 0;
   }
 
   command void OrinocoRoutingRoot.resetBloomFilter() {

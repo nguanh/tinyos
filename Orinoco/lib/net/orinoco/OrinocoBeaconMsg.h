@@ -14,7 +14,6 @@ typedef enum {
   BLOOM_BYTES = 8,             // bytes in the Bloom filter (x8 for bits)
   BLOOM_HASHES = 3,            // number of hashes to calculate per entry
   BLOOM_VERSION_MAX = 0x7080,  // maximum version number of filter (must be <0x7FFF)
-  NUM_LONG_BEACONS = 5,        // number of long beacons before reverting to shorts
   SHORT_BEACON = 0x8000,       // packet carries a Bloom filter (0x0000) or not (0x8000)
 } orinoco_routing_parameters_t;
 

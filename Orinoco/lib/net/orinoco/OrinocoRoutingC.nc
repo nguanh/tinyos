@@ -65,5 +65,9 @@ implementation {
   // To re-calculate hashes on address change
   components ActiveMessageAddressC as Address;
   OrinocoRoutingP.AMA -> Address;
+    
+  components RandomC;
+  OrinocoRoutingP.Random -> RandomC;
+
 }
 
