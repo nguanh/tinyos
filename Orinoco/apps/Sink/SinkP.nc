@@ -87,6 +87,16 @@ module SinkP @safe() {
   }
 }
 
+
+#ifndef SLEEP_DURATION
+#  define SLEEP_DURATION 256
+#endif
+#ifndef BLOOM_ADD_NODE_INTVL
+#  define BLOOM_ADD_NODE_INTVL 10240UL
+#endif
+//#pragma message "WAKEUP_INTVL =" WAKEUP_INTVL
+  
+
 implementation
 {
   enum {
@@ -140,7 +150,7 @@ implementation
     }
 
     // set static wake-up interval for orinoco
-    call OrinocoConfig.setWakeUpInterval(256); // ms
+    call OrinocoConfig.setWakeUpInterval(SLEEP_DURATION); // ms
 
     // bring the components up
     call RootControl.setRoot();
@@ -150,7 +160,7 @@ implementation
 
     // demo function
     call Notify.enable();
-    call AliveTimer.startPeriodic(5120UL);
+    call AliveTimer.startPeriodic(BLOOM_ADD_NODE_INTVL);
   }
 
   // DEBUG: This is a current test implementation to see if recipients 
