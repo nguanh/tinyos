@@ -302,6 +302,7 @@ implementation {
 
     // start sleep timer and proceed to sleep state
     } else if (state_ == SLEEP_TIMER) {
+      call Routing.wakeUpCycleFinished();
       call Timer.startOneShot(getRandomSleepTime());
       state_ = SLEEP;
 

@@ -46,7 +46,10 @@ interface OrinocoRoutingInternal {
 
   // get current filter for piggybacking on outbound messages
   command const orinoco_routing_t * getCurrentBloomFilter(am_addr_t dest);
-  
+
+  // set probability for short beacons 
+  command void wakeUpCycleFinished(void);
+    
   // does the Bloom filter indicate packets for us?
   command bool packetAvailableForUs(void);
   

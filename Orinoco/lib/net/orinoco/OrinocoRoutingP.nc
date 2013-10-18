@@ -61,7 +61,6 @@ implementation {
   message_t  myMsg; // see above
 
   bool                     packetWaiting_    = FALSE;
-  uint8_t                  shortBeaconProbability_ = 0;
   am_addr_t                lastBeaconDestination_;
   am_addr_t                lastBeaconSource_;
   orinoco_routing_t        curRouting_;
@@ -69,6 +68,10 @@ implementation {
   am_addr_t                localId_;
   orinoco_bloom_pointers_t bp_;
 
+  uint8_t      rxOldBeaconsInLastCycle_ = 0; // number of outdated beacons in last cycle
+  uint8_t      rxBeaconsInLastCycle_ = 0;    // total number of beacons in last cycle
+  uint16_t     txLongBeaconProb_ = 255;      // probability to force a long beacon (0-255)
+  
   uint32_t shortBcnTxCount_ = 0, longBcnTxCount_ = 0;
   
   /* HASH FUNCTION ******************************************************************/
@@ -157,12 +160,13 @@ implementation {
     #endif
   }
   
-  command void OrinocoRoutingInternal.updateBloomFilter(const orinoco_routing_t * route, am_addr_t source) {
-    if ((route->version & ~SHORT_BEACON) == curVersion_) { // No update to current filter
-      // Increase probability to send short beacons (AIMD)
-      if (shortBeaconProbability_ < 16) shortBeaconProbability_++; 
-      return;
-    }
+  // Returns whether there is an outdated 
+  command void OrinocoRoutingInternal.updateBloomFilter(const orinoco_routing_t * route, 
+               am_addr_t source) {
+               
+    rxBeaconsInLastCycle_++; // count number of received beacons per wakeup phase
+         
+    if ((route->version & ~SHORT_BEACON) == curVersion_) return; // no update
     
     // TBD: Do we need to clear packet notification flags here when it is unsure whether
     //      the current (=a newer) filter still has this node in its destination set?
@@ -171,11 +175,8 @@ implementation {
     // to re-broadcast it or (2) someone has sent a beacon indicating an old version and 
     // we need to bring them up-to-date. Give them a chance to receive the newest state!
 
-    shortBeaconProbability_ >>= 1; // Increase likelihood of sending a long beacon (AIMD)
-    // TODO Find analytic optimum for decrement step. Or leave as is...
-    
     if (route->version & SHORT_BEACON) return; // short beacons contain no routing data
-    
+
     // we need to check if the version number is higher UNLESS a wraparound occurred...
     if ((              route->version  >  curVersion_)    ||
        ((curVersion_ - route->version) >= (BLOOM_VERSION_MAX/2)))  {
@@ -203,21 +204,38 @@ implementation {
       //displayBloomFilter();    
       
       packetWaiting_ = checkForPresenceInFilter(); // send notification events
+    } else {
+      rxOldBeaconsInLastCycle_++; // received an outdated routing version
     }
   }
   
-  command const orinoco_routing_t* OrinocoRoutingInternal.getCurrentBloomFilter(am_addr_t dest) {
-    // Short beacon magic...
-    if (dest == lastBeaconSource_      || // We learned our latest filter from this node
-        dest == lastBeaconDestination_ || // We have sent our filter to this node before
-       ((call Random.rand16() >> 12) < shortBeaconProbability_) ){ // match to line 163
-               
+  command void OrinocoRoutingInternal.wakeUpCycleFinished(void) {
+    if (rxBeaconsInLastCycle_ == 0) return; // did not receive snapshot of neighbor status
+    txLongBeaconProb_ = (rxOldBeaconsInLastCycle_ << 8) / rxBeaconsInLastCycle_;
+
+    #ifdef PRINTF_H
+      printf("RX total %u, outdated %u, prob %u/256\n",rxBeaconsInLastCycle_,
+                                   rxOldBeaconsInLastCycle_,txLongBeaconProb_); 
+      printfflush();
+    #endif
+    
+    rxBeaconsInLastCycle_ = 0; 
+    rxOldBeaconsInLastCycle_ = 0;
+  }
+  
+  
+  command const orinoco_routing_t* OrinocoRoutingInternal.getCurrentBloomFilter(am_addr_t dest) { 
+    // Start the short beacon magic...
+    bool sendShort = (call Random.rand16()>>8) >= txLongBeaconProb_;
+    
+    // We learned our latest filter from this node or sent our filter to this node before
+    if (dest==lastBeaconSource_ || dest==lastBeaconDestination_ || sendShort) {
       curRouting_.version |= SHORT_BEACON;  // set short beacon flag
       shortBcnTxCount_++; 
     } else {
       curRouting_.version &= ~SHORT_BEACON; // clear short beacon flag
       if (dest != AM_BROADCAST_ADDR) {
-        lastBeaconDestination_ = dest;        // memorize: this one has received full filter
+        lastBeaconDestination_ = dest;      // memorize: this one has received full filter
       }
       longBcnTxCount_++;
     }
@@ -273,7 +291,6 @@ implementation {
       curVersion_++;
       curRouting_.version++;
     }
-    shortBeaconProbability_ = 0; 
     lastBeaconDestination_ = 0;
   }
 
