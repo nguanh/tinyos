@@ -65,7 +65,8 @@ implementation {
   struct {
     uint16_t  numPktCreated;      ///> number of created packets since last update
     uint16_t  numPktReceived;     ///> number of received packets since last update
-    uint32_t  curForwardTime;     ///> time at which forwarding was started
+    uint32_t  curForwardBegin;    ///> time at which forwarding was started
+    uint32_t  curForwardDelay;    ///> delay of current forwarding period
     uint8_t   curTxBurstLen;      ///> current number of subsequently sent packets
     uint8_t   curRxBurstLen;      ///> current number of subsequently received packets
   } tv_ = {0};
@@ -84,6 +85,7 @@ implementation {
     }
   }
   
+  //TODO event void Updates.pktCreated();
   command void Updates.updatePktCreationIntvl() {
     tv_.numPktCreated++;
   }
@@ -97,6 +99,7 @@ implementation {
     }
   }
 
+  //TODO keep or remove? see below?
   command void Updates.updatePktReceptionIntvl() {
     tv_.numPktReceived++;
   }
@@ -106,6 +109,7 @@ implementation {
   }
 
   // @param flag to signal last packet in a burst
+  // TODO remove this function
   command void Updates.updateTxBurst(bool end) {
     if (end) {
       ts_.avgTxBurstLen = ewmaFilter16(ts_.avgTxBurstLen, (uint16_t)tv_.curTxBurstLen * 256, EWMA_FILTER);
@@ -120,6 +124,26 @@ implementation {
   }
 
   // @param flag to signal last packet in a burst
+  // FIXME why is this extra? -> because we're tracking received packets in the queue (not counting dups)
+  // and are counting burst lengths in the radio ... should change that somehow ...
+  //TODO
+  //event void Updates.receiveInit() {
+  //  //NOTE tv_.numPktReceived is reset in the period job (as is numPktCreated)
+  //  tv_.curRxBurstLen = 0;
+  //}
+  //
+  //event void Updates.receivePacketReceived() {
+  //  tv_.numPktReceived++;
+  //  tv_.curRxBurstLen++;
+  //}
+  //
+  //event void Updates.receiveFinish() {
+  //  // only count burst, if there was data at all
+  //  if (tv_.curRxBurstLen > 0) {
+  //    ts_.avgRxBurstLen = ewmaFilter16(ts_.avgRxBurstLen, (uint16_t)tv_.curRxBurstLen * 256, EWMA_FILTER);
+  //    tv_.curRxBurstLen = 0;  // sanity (is also reset in Init())
+  //  }
+  //}
   command void Updates.updateRxBurst(bool end) {
     if (end) {
       // only count burst, if there was data at all
@@ -136,6 +160,39 @@ implementation {
     return ts_.avgForwardDelay;
   }
 
+  // TODO
+  //event void Updates.forwardInit() {
+  //  // NOTE at the moment, this doesn't count in that forwarding may be interrupt or given up
+  //  tv_.curForwardBegin = call LocalTime.get();
+  //  tv_.curForwardDelay     = 0;  // not necessary, but safer
+  //  tv_.curTxBurstLen   = 0;
+  //}
+  //event void Updates.forwardFinish() {
+  // // how to deal with burst of zero? use for updates or don't?
+  // // what is the meaning of a zero burst (sort if interfers with the waiting time?)
+  // // we should be consistent with these two
+  //  // TODO what if txBurstLen == 0
+  //  if (tv_.curTxBurstLen > 0) {
+  //    ts_.avgTxBurstLen   = ewmaFilter16(ts_.avgTxBurstLen, (uint16_t)tv_.curTxBurstLen * 256, EWMA_FILTER);
+  //    ts_.avgForwardDelay = ewmaFilter32(ts_.avgForwardDelay, tv_.curForwardDelay, EWMA_FILTER);
+  //  }
+  //}
+  //
+  //event void Updates.forwardBeaconReceived(bool isAck) {
+  //  if (isAck) {
+  //    tv_.curTxBurstLen++;  // packet delivered
+  //    if (tv_.curTxBurstLen == 1 /*first packet delivered*/) {
+
+  //    }
+  //  else {
+  //    if (tv_.curTxBurstLen == 0 /*first packet pending*/) {
+  //      // calculate and the store the waiting time (time delta)
+  //      // the start time is recorded in pkt 
+  //      tv_.curForwardDelay = call LocalTime.get() - tv_.curForwardBegin;
+  //    }
+  //  }
+  //}
+  
   command void Updates.updateForwardDelay(bool reset) {
     uint32_t  now = call LocalTime.get();
     if (tv_.curTxBurstLen == 1 /*done*/) {

@@ -310,6 +310,7 @@ implementation {
       call Timer.startOneShot(getMaxWaitingTime());
       state_ = FORWARD;
 
+      //TODO signal TrafficUpdates.forwardInit();
       call TrafficUpdates.updateForwardDelay(TRUE);
 
     // start receive timer (timeout)
@@ -352,6 +353,7 @@ implementation {
       post transition();
 
       // TODO is this the only place?
+      //TODO signal TrafficUpdates.forwardFinish();
       call TrafficUpdates.updateTxBurst(TRUE);
     
     // reception completed
@@ -646,6 +648,7 @@ implementation {
           isAck = TRUE;  // this beacon was an (implicit) ack!
 
           // statistics, must be in this order!
+          //TODO remove
           call TrafficUpdates.updateTxBurst(FALSE);
           call TrafficUpdates.updateForwardDelay(FALSE);
         
@@ -653,11 +656,14 @@ implementation {
           return msg;
         }
       }
+      
 
       // check whether to accept forwarding offer, if there is any packet.
       // order of this expression is intended (and required), since
       // processBeacon() will adapt the local weight (if possible)
       if (processBeacon(msg, isAck) && txDataMsg_ != NULL) {
+        //TODO signal TrafficUpdates.forwardBeaconReceived(isAck);
+            
         // reset timer only if beacon was an ack
         // this piece of code should be obsolete, so commented out
         //if (isAck) {
