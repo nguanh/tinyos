@@ -119,7 +119,7 @@ implementation {
     error_t returnCode;
     
     #ifdef PRINTF_H
-      printf("%u BX %u\n", TOS_NODE_ID, identifier);
+      printf("%u RX ID %u\n", TOS_NODE_ID, identifier);
       //printf("==> New cmd request: %s (version %u)\n",getFunctionName(cmd),identifier);
       printfflush();
     #endif
