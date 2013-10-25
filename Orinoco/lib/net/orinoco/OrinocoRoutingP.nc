@@ -59,7 +59,13 @@ module OrinocoRoutingP {
 implementation {
   uint8_t    i;     // the classic, everybody should have one just in case
   message_t  myMsg; // see above
-
+  
+  enum {
+    BEACON_FORCE_NONE  = 0x00,
+    BEACON_FORCE_SHORT = 0x01,
+    BEACON_FORCE_LONG  = 0x02,
+  };
+  
   bool                     packetWaiting_    = FALSE;
   am_addr_t                lastBeaconDestination_;
   am_addr_t                lastBeaconSource_;
@@ -70,6 +76,7 @@ implementation {
 
   uint8_t      rxOldBeaconsInLastCycle_ = 0; // number of outdated beacons in last cycle
   uint8_t      rxBeaconsInLastCycle_ = 0;    // total number of beacons in last cycle
+  uint8_t      beaconOverride_ = BEACON_FORCE_NONE; // force a particular beacon type
   uint16_t     txLongBeaconProb_ = 255;      // probability to force a long beacon (0-255)
   
   uint32_t shortBcnTxCount_ = 0, longBcnTxCount_ = 0;
@@ -167,9 +174,9 @@ implementation {
     rxBeaconsInLastCycle_++; // count number of received beacons in wakeup phase
     if (rxVersion == curVersion_) return; // no update
 
-    // If we get here, there is either (1) a newer version of the Bloom filter and we need
-    // to re-broadcast it or (2) someone has sent a beacon indicating an old version and 
-    // we need give them a chance to receive the newest state
+    // If we get here, there is either:
+    // (1) a newer version of the Bloom filter in the network or 
+    // (2) someone has sent a beacon indicating an old version
 
     // TBD: Do we need to clear packet notification flags here when it is unsure whether
     //      the current (=a newer) filter still has this node in its destination set?
@@ -184,15 +191,13 @@ implementation {
       if (route->version & SHORT_BEACON) {
         // ...but hasn't sent it along with this beacon. This means we should certainly 
         // stop sending our (outdated) filter within the (long) beacons to our neighbors.
-        rxBeaconsInLastCycle_ = 192; 
-        rxOldBeaconsInLastCycle_ = 0;
+        beaconOverride_ = BEACON_FORCE_SHORT;
         return; 
         
       } else {
         // ...and we have received it! In order to bring our neighbors up-to-date, let us
         // send mostly long beacons next to disseminate it quickly.
-        rxBeaconsInLastCycle_ = 192;
-        rxOldBeaconsInLastCycle_ = 192;
+        beaconOverride_ = BEACON_FORCE_LONG;
       }
       
       #ifdef PRINTF_H
@@ -219,17 +224,32 @@ implementation {
   }
   
   command void OrinocoRoutingInternal.wakeUpCycleFinished(void) {
-    if (rxBeaconsInLastCycle_ == 0) return; // did not receive snapshot of neighbor status
-    txLongBeaconProb_ = (rxOldBeaconsInLastCycle_ << 8) / rxBeaconsInLastCycle_;
+    if (beaconOverride_ == BEACON_FORCE_SHORT) {
+      txLongBeaconProb_ = 0;
+      #ifdef PRINTF_H
+        printf("Forcing short beacons...\n"); 
+        printfflush();
+      #endif
+    } else if (beaconOverride_ == BEACON_FORCE_LONG) {
+      txLongBeaconProb_ = 255;    
+      #ifdef PRINTF_H
+        printf("Forcing long beacons...\n"); 
+        printfflush();
+      #endif
+    } else {
+      if (rxBeaconsInLastCycle_ == 0) return; // did not receive snapshot of neighbor status
+      txLongBeaconProb_ = (rxOldBeaconsInLastCycle_ << 8) / rxBeaconsInLastCycle_;
 
-    #ifdef PRINTF_H
-      printf("RX total %u, outdated %u, prob %u/256\n",rxBeaconsInLastCycle_,
-                                   rxOldBeaconsInLastCycle_,txLongBeaconProb_); 
-      printfflush();
-    #endif
+      #ifdef PRINTF_H
+        printf("RX total %u, outdated %u, prob %u/256\n",rxBeaconsInLastCycle_,
+                                     rxOldBeaconsInLastCycle_,txLongBeaconProb_); 
+        printfflush();
+      #endif
+    }      
     
     rxBeaconsInLastCycle_ = 0; 
     rxOldBeaconsInLastCycle_ = 0;
+    beaconOverride_ = BEACON_FORCE_NONE;
   }
   
   
