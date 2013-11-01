@@ -196,10 +196,10 @@ implementation {
   command void Updates.updateForwardDelay(bool reset) {
     uint32_t  now = call LocalTime.get();
     if (tv_.curTxBurstLen == 1 /*done*/) {
-      ts_.avgForwardDelay = ewmaFilter32(ts_.avgForwardDelay, now - tv_.curForwardTime, EWMA_FILTER);
+      ts_.avgForwardDelay = ewmaFilter32(ts_.avgForwardDelay, now - tv_.curForwardBegin, EWMA_FILTER);
     }
     if (reset) {
-      tv_.curForwardTime = now;
+      tv_.curForwardBegin = now;
     }
   }
 
