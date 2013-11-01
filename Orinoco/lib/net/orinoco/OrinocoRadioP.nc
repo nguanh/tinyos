@@ -214,7 +214,7 @@ implementation {
   /*** beacon preparation and sending ************************************/
   inline uint16_t getRandomSleepTime() {
     uint16_t   rdev;
-    rdev  = call Random.rand16() % (2 * call Config.getAbsWakeUpDeviation());
+    rdev  = call Random.rand16() % (1 + 2 * call Config.getAbsWakeUpDeviation());
     return call Config.getWakeUpInterval() + call Config.getAbsWakeUpDeviation() - rdev;
   }
 
