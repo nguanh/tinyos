@@ -197,7 +197,10 @@ implementation {
       }
       
       // forward beacon to routing subcomponent (regardless if accepted or not)
-      call Routing.updateBloomFilter(&p->route, call SubAMPacket.source(msg));
+      if (call SubAMPacket.destination(msg) == AM_BROADCAST_ADDR) {
+        // only broadcast beacons are considered (i.e. ignore ACK beacons)
+        call Routing.updateBloomFilter(&p->route, call SubAMPacket.source(msg));
+      }
     }
 
 #ifdef ORINOCO_DEBUG_STATISTICS

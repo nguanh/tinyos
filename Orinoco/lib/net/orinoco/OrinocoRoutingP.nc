@@ -59,7 +59,13 @@ module OrinocoRoutingP {
 implementation {
   uint8_t    i;     // the classic, everybody should have one just in case
   message_t  myMsg; // see above
-
+  
+  enum {
+    BEACON_FORCE_NONE  = 0x00,
+    BEACON_FORCE_SHORT = 0x01,
+    BEACON_FORCE_LONG  = 0x02,
+  };
+  
   bool                     packetWaiting_    = FALSE;
   am_addr_t                lastBeaconDestination_;
   am_addr_t                lastBeaconSource_;
@@ -70,6 +76,7 @@ implementation {
 
   uint8_t      rxOldBeaconsInLastCycle_ = 0; // number of outdated beacons in last cycle
   uint8_t      rxBeaconsInLastCycle_ = 0;    // total number of beacons in last cycle
+  uint8_t      beaconOverride_ = BEACON_FORCE_NONE; // force a particular beacon type
   uint16_t     txLongBeaconProb_ = 255;      // probability to force a long beacon (0-255)
   
   uint32_t shortBcnTxCount_ = 0, longBcnTxCount_ = 0;
@@ -160,43 +167,50 @@ implementation {
     #endif
   }
   
-  // Returns whether there is an outdated 
   command void OrinocoRoutingInternal.updateBloomFilter(const orinoco_routing_t * route, 
                am_addr_t source) {
-               
-    rxBeaconsInLastCycle_++; // count number of received beacons per wakeup phase
-         
-    if ((route->version & ~SHORT_BEACON) == curVersion_) return; // no update
-    
+
+    uint16_t rxVersion = route->version & ~SHORT_BEACON;
+    rxBeaconsInLastCycle_++; // count number of received beacons in wakeup phase
+    if (rxVersion == curVersion_) return; // no update
+
+    // If we get here, there is either:
+    // (1) a newer version of the Bloom filter in the network or 
+    // (2) someone has sent a beacon indicating an old version
+
     // TBD: Do we need to clear packet notification flags here when it is unsure whether
     //      the current (=a newer) filter still has this node in its destination set?
-      
-    // If we get here, there is either (1) a newer version of the Bloom filter and we need
-    // to re-broadcast it or (2) someone has sent a beacon indicating an old version and 
-    // we need to bring them up-to-date. Give them a chance to receive the newest state!
 
-    if (route->version & SHORT_BEACON) return; // short beacons contain no routing data
-
-    // we need to check if the version number is higher UNLESS a wraparound occurred...
-    if ((              route->version  >  curVersion_)    ||
-       ((curVersion_ - route->version) >= (BLOOM_VERSION_MAX/2)))  {
+    // version number must be higher UNLESS a wraparound occurred...
+    if ((rxVersion > curVersion_) || ((curVersion_ - rxVersion) >= (BLOOM_VERSION_MAX/2))) {
        // above wraparound workaround ensures that nodes can be disconnected for 
        // about one hour before they will ignore beacons for another hour...
        // half of 32767 possible beacons "divided by" 4 beacons/sec = 4096 seconds
+
+      // So again, if we get here, then a neighbor has a newer version...
+      if (route->version & SHORT_BEACON) {
+        // ...but hasn't sent it along with this beacon. This means we should certainly 
+        // stop sending our (outdated) filter within the (long) beacons to our neighbors.
+        beaconOverride_ = BEACON_FORCE_SHORT;
+        return; 
+        
+      } else {
+        // ...and we have received it! In order to bring our neighbors up-to-date, let us
+        // send mostly long beacons next to disseminate it quickly.
+        beaconOverride_ = BEACON_FORCE_LONG;
+      }
       
       #ifdef PRINTF_H
       printf("%lu: 0x%04x BFUP %u -> %u\n", call Clock.get(), localId_, curVersion_, route->version);
       printfflush();  
       #endif
 
-      // CR: deep copy anyway (array inside struct)
-      // This pointer operation did not work... ;-)
-      // curRouting_ = *route;
+      // curRouting_ = *route; /* this pointer operation does not work... */
 	  // TODO Check if we can still use pointers here...
       curRouting_.version = route->version; // maybe memcpy is an alternative...
       curRouting_.cmd     = route->cmd;     // multicast group command
       for (i=0;i<BLOOM_BYTES;i++) curRouting_.bloom[i] = route->bloom[i];
-      curVersion_ = route->version; // store this separately to match future RX filters
+      curVersion_ = route->version; // store this separately to match future RXed filters
 
       lastBeaconSource_ = source;
       lastBeaconDestination_ = 0;
@@ -210,17 +224,32 @@ implementation {
   }
   
   command void OrinocoRoutingInternal.wakeUpCycleFinished(void) {
-    if (rxBeaconsInLastCycle_ == 0) return; // did not receive snapshot of neighbor status
-    txLongBeaconProb_ = (rxOldBeaconsInLastCycle_ << 8) / rxBeaconsInLastCycle_;
+    if (beaconOverride_ == BEACON_FORCE_SHORT) {
+      txLongBeaconProb_ = 0;
+      #ifdef PRINTF_H
+        printf("Forcing short beacons...\n"); 
+        printfflush();
+      #endif
+    } else if (beaconOverride_ == BEACON_FORCE_LONG) {
+      txLongBeaconProb_ = 255;    
+      #ifdef PRINTF_H
+        printf("Forcing long beacons...\n"); 
+        printfflush();
+      #endif
+    } else {
+      if (rxBeaconsInLastCycle_ == 0) return; // did not receive snapshot of neighbor status
+      txLongBeaconProb_ = (rxOldBeaconsInLastCycle_ << 8) / rxBeaconsInLastCycle_;
 
-    #ifdef PRINTF_H
-      printf("RX total %u, outdated %u, prob %u/256\n",rxBeaconsInLastCycle_,
-                                   rxOldBeaconsInLastCycle_,txLongBeaconProb_); 
-      printfflush();
-    #endif
+      #ifdef PRINTF_H
+        printf("RX total %u, outdated %u, prob %u/256\n",rxBeaconsInLastCycle_,
+                                     rxOldBeaconsInLastCycle_,txLongBeaconProb_); 
+        printfflush();
+      #endif
+    }      
     
     rxBeaconsInLastCycle_ = 0; 
     rxOldBeaconsInLastCycle_ = 0;
+    beaconOverride_ = BEACON_FORCE_NONE;
   }
   
   
