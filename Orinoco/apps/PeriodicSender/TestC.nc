@@ -41,9 +41,11 @@
 #include "Orinoco.h"
 #include "MulticastCommands.h"
 
+#include "OrinocoDebugReportingMsg.h"
+
 #define MSG_BURST_LEN      1    // number of packets per period (#)
 #define DATA_PERIOD    10240UL  // data creation period (ms)
-#define QUEUE_LIMIT        1    // aggregattion degree (#)
+#define QUEUE_LIMIT        1    // aggregation degree (#)
 #define WAKEUP_INTVL    1024    // wake-up period (ms)
 
 #define AM_PERIODIC_PACKET  33  // packet type
@@ -61,9 +63,11 @@ module TestC {
     interface QueueSend as Send[collection_id_t];
     interface Leds;
     
+    interface LocalTime<TMilli>;
+    
     // Orinoco Stats
-    interface Receive as OrinocoStatsReportingMsg;
-    //interface Receive as OrinocoDebugReportingMsg;
+    interface Receive as OrinocoStatsReporting;
+    interface Receive as OrinocoDebugReporting;
   }
 }
 implementation {
@@ -90,22 +94,22 @@ implementation {
   event void Timer.fired() {
     uint8_t  msgCnt;
     error_t  result;
-      
-    #ifdef PRINTF_H
-    printf("Trying to send %u packet(s)...",MSG_BURST_LEN);
-    #endif
     
     for (msgCnt = 0; msgCnt < MSG_BURST_LEN; msgCnt++) {
       nx_uint16_t *d = call Packet.getPayload(&myMsg, sizeof(cnt));
       call Packet.clear(&myMsg);
       *d = cnt++;
       result = call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(cnt));
+      #ifdef PRINTF_H
+      if (SUCCESS == result) {
+        printf("%lu: 0x%04x data %u\n", call LocalTime.get(), TOS_NODE_ID, cnt);
+        printfflush();
+      } else {
+        printf("%lu: 0x%04x data-fail %u\n", call LocalTime.get(), TOS_NODE_ID, cnt);
+        printfflush();
+      }
+      #endif
     }
-      
-    #ifdef PRINTF_H
-    if (result == SUCCESS) printf(" done.\n"); else printf(" FAIL!\n");
-    printfflush();    
-    #endif
     
     call Timer.startOneShot(delay);
   }
@@ -119,8 +123,7 @@ implementation {
     error_t returnCode;
     
     #ifdef PRINTF_H
-      printf("%u RX ID %u\n", TOS_NODE_ID, identifier);
-      //printf("==> New cmd request: %s (version %u)\n",getFunctionName(cmd),identifier);
+      printf("%lu: %u rx-cmd %u\n", call LocalTime.get(), TOS_NODE_ID, identifier);
       printfflush();
     #endif
     
@@ -171,13 +174,33 @@ implementation {
   
 
   /* ************************* ORINOCO STATS ************************* */
-  event message_t * OrinocoStatsReportingMsg.receive(message_t *msg, void *payload, uint8_t len) {
-    call Send.send[CID_ORINOCO_STATS_REPORT](msg, len);  // packet is copied or rejected
+  event message_t * OrinocoStatsReporting.receive(message_t *msg, void *payload, uint8_t len) {
+    //call Send.send[CID_ORINOCO_STATS_REPORT](msg, len);  // packet is copied or rejected
     return msg;
   }
 
-  /*event message_t * OrinocoDebugReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
-    call Send.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
+  event message_t * OrinocoDebugReporting.receive(message_t * msg, void * payload, uint8_t len) {
+    //call Send.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
+    
+    OrinocoDebugReportingMsg * m = (OrinocoDebugReportingMsg *)payload;
+    printf("%lu: %u debug %u %u %u %lu %lu %u %lu %lu %lu %u %lu %u %u\n",
+      call LocalTime.get(),
+      TOS_NODE_ID,
+      m->seqno,
+      m->qs.numPacketsDropped,
+      m->qs.numDuplicates,
+      m->ps.numTxBeacons,
+      m->ps.numTxAckBeacons,
+      m->ps.numTxBeaconsFail,
+      m->ps.numRxBeacons,
+      m->ps.numIgnoredBeacons,
+      m->ps.numTxPackets,
+      m->ps.numTxPacketsFail,
+      m->ps.numRxPackets,
+      m->ps.numTxTimeouts,
+      m->ps.numMetricResets);
+    printfflush();
+    
     return msg;
-  }*/
+  }
 }

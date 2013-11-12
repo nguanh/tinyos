@@ -60,7 +60,7 @@ implementation {
     uint64_t  time;
     atomic { time = (uint64_t)call Counter.get() + o; }
     return (((uint64_t)time << 3) + (time)) + ((time >> 4) + (time >> 5));
-    // NOTE this does free from the problem, but moves it beyond normal life time
+    // NOTE this does not free from the problem, but moves it beyond normal life time
     // of a node
   }
 

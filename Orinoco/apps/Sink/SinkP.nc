@@ -43,6 +43,11 @@
 #include "Reporting.h"
 #include "MulticastCommands.h"
 
+#include "OrinocoDebugReportingMsg.h"
+
+#define BLOOM_ADDR_MAX 100
+
+
 module SinkP @safe() {
   uses {
     interface Boot;
@@ -79,20 +84,22 @@ module SinkP @safe() {
     interface AMPacket as RadioAMPacket;
 */
 
-    interface Receive as OrinocoStatsReportingMsg;
-    interface Receive as OrinocoDebugReportingMsg;
+    interface Receive as OrinocoStatsReporting;
+    interface Receive as OrinocoDebugReporting;
 
     interface Notify<button_state_t>;
     interface Leds;
+
+    interface LocalTime<TMilli>;  
   }
 }
 
 
 #ifndef SLEEP_DURATION
-#  define SLEEP_DURATION 256
+#  define SLEEP_DURATION 1024
 #endif
 #ifndef BLOOM_ADD_NODE_INTVL
-#  define BLOOM_ADD_NODE_INTVL 10240UL
+#  define BLOOM_ADD_NODE_INTVL 307200UL
 #endif
 //#pragma message "WAKEUP_INTVL =" WAKEUP_INTVL
   
@@ -169,10 +176,13 @@ implementation
   event void AliveTimer.fired() {
     call OrinocoRoutingRoot.addDestination(addr);
     #ifdef PRINTF_H
-    printf("%u BFADD 0x%04x\n", TOS_NODE_ID, addr);
+    printf("%lu: %u bfadd 0x%04x\n", call LocalTime.get(), TOS_NODE_ID, addr);
     printfflush();
     #endif
     addr++;
+    if (addr == BLOOM_ADDR_MAX) {
+      addr = 1;
+    }
   }
 
   // Cycle through currently supported commands by means of user button...
@@ -193,13 +203,33 @@ implementation
     }
   }
 
-  event message_t * OrinocoStatsReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
+  event message_t * OrinocoStatsReporting.receive(message_t * msg, void * payload, uint8_t len) {
     //call RadioSend.send[CID_ORINOCO_STATS_REPORT](msg, len);  // packet is copied or rejected
     return msg;
   }
 
-  event message_t * OrinocoDebugReportingMsg.receive(message_t * msg, void * payload, uint8_t len) {
+  event message_t * OrinocoDebugReporting.receive(message_t * msg, void * payload, uint8_t len) {
     //call RadioSend.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
+    
+    OrinocoDebugReportingMsg * m = (OrinocoDebugReportingMsg *)payload;
+    printf("%lu: %u debug %u %u %u %lu %lu %u %lu %lu %lu %u %lu %u %u\n",
+      call LocalTime.get(),
+      TOS_NODE_ID,
+      m->seqno,
+      m->qs.numPacketsDropped,
+      m->qs.numDuplicates,
+      m->ps.numTxBeacons,
+      m->ps.numTxAckBeacons,
+      m->ps.numTxBeaconsFail,
+      m->ps.numRxBeacons,
+      m->ps.numIgnoredBeacons,
+      m->ps.numTxPackets,
+      m->ps.numTxPacketsFail,
+      m->ps.numRxPackets,
+      m->ps.numTxTimeouts,
+      m->ps.numMetricResets);
+    printfflush();
+    
     return msg;
   }
 

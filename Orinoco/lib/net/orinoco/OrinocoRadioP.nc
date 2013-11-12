@@ -139,10 +139,10 @@ implementation {
     // This may be problematic because it emits a lot of data all the time...
     #ifdef PRINTF_H
       if (txBeaconDst_ != AM_BROADCAST_ADDR) {
-        printf("%lu: 0x%04x sending ACK beacon to 0x%04x (routing version %u, command %u, short %u)\n", 
-             call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, (p->route.version & ~SHORT_BEACON), p->route.cmd, (p->route.version & SHORT_BEACON) ? 1 : 0);
+        printf("%lu: 0x%04x tx-ack 0x%04x (%u, %u)\n", 
+             call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, (p->route.version & ~SHORT_BEACON), (p->route.version & SHORT_BEACON) ? 1 : 0);
       } else {
-        printf("%lu: 0x%04x sending beacon (routing version %u, short %u)\n", 
+        printf("%lu: 0x%04x tx-beac (%u, %u)\n", 
              call LocalTime.get(), TOS_NODE_ID, (p->route.version & ~SHORT_BEACON), (p->route.version & SHORT_BEACON) ? 1 : 0);
       }
       printfflush();

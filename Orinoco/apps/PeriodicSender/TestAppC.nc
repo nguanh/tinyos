@@ -64,16 +64,19 @@ implementation {
   TestC.Packet            -> OrinocoP;
   TestC.OrinocoConfig     -> OrinocoP;
   TestC.OrinocoRouting    -> OrinocoP;
-    
+
   // Orinoco internal reporting
   components OrinocoStatsReportingJobC;
   OrinocoStatsReportingJobC.Packet -> OrinocoP;
-  TestC.OrinocoStatsReportingMsg   -> OrinocoStatsReportingJobC;
+  TestC.OrinocoStatsReporting   -> OrinocoStatsReportingJobC;
 
   components LedsC;
   TestC.Leds -> LedsC;
+
+  components LocalTimeMilliC;
+  TestC.LocalTime -> LocalTimeMilliC;
   
-  //components OrinocoDebugReportingJobC;
-  //OrinocoDebugReportingJobC.Packet -> OrinocoP;
-  //TestC.OrinocoDebugReportingMsg   -> OrinocoDebugReportingJobC;
+  components OrinocoDebugReportingJobC;
+  OrinocoDebugReportingJobC.Packet -> OrinocoP;
+  TestC.OrinocoDebugReporting   -> OrinocoDebugReportingJobC;
 }

@@ -81,16 +81,19 @@ implementation {
 
   components OrinocoStatsReportingJobC;
   OrinocoStatsReportingJobC.Packet -> Radio;
-  SinkP.OrinocoStatsReportingMsg   -> OrinocoStatsReportingJobC;
+  SinkP.OrinocoStatsReporting   -> OrinocoStatsReportingJobC;
 
   #ifdef ORINOCO_DEBUG_STATISTICS
   components OrinocoDebugReportingJobC;
   OrinocoDebugReportingJobC.Packet -> Radio;
-  SinkP.OrinocoDebugReportingMsg   -> OrinocoDebugReportingJobC;
+  SinkP.OrinocoDebugReporting   -> OrinocoDebugReportingJobC;
   #endif
   
   components NoLedsC as LedsC;
   SinkP.Leds         -> LedsC;
   components      UserButtonC;
   SinkP.Notify -> UserButtonC;
+
+  components LocalTimeMilliC;
+  SinkP.LocalTime -> LocalTimeMilliC;
 }
