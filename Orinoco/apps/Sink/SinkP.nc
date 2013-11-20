@@ -47,6 +47,11 @@
 
 #define BLOOM_ADDR_MAX 100
 
+/**
+ * TODO
+ * - print normal packet stats (delay of packet ?)
+ * - print info about received acks
+ */
 
 module SinkP @safe() {
   uses {
