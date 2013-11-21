@@ -44,6 +44,7 @@
 #include "MulticastCommands.h"
 
 #include "OrinocoDebugReportingMsg.h"
+#include "OrinocoBeaconMsg.h"
 
 #define BLOOM_ADDR_MAX 100
 
@@ -179,14 +180,20 @@ implementation
   //        find themselves in the Bloom filter
   am_addr_t addr = 1;
   event void AliveTimer.fired() {
-    call OrinocoRoutingRoot.addDestination(addr);
-    #ifdef PRINTF_H
-    printf("%lu: 0x%04x bf-add 0x%04x\n", call LocalTime.get(), TOS_NODE_ID, addr);
-    printfflush();
-    #endif
-    addr++;
     if (addr == BLOOM_ADDR_MAX) {
       addr = 1;
+      call OrinocoRoutingRoot.resetAndAddDestination(addr);
+      #ifdef PRINTF_H
+      printf("%lu: %u bf-rst %u\n", call LocalTime.get(), TOS_NODE_ID, addr);
+      printfflush();
+      #endif
+    } else {
+      call OrinocoRoutingRoot.addDestination(addr);
+      #ifdef PRINTF_H
+      printf("%lu: %u bf-add %u\n", call LocalTime.get(), TOS_NODE_ID, addr);
+      printfflush();
+      #endif
+      addr++;
     }
   }
 
@@ -217,7 +224,7 @@ implementation
     //call RadioSend.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
     
     OrinocoDebugReportingMsg * m = (OrinocoDebugReportingMsg *)payload;
-    printf("%lu: 0x%04x debug %u %u %u %lu %lu %u %lu %lu %lu %u %lu %u %u\n",
+    printf("%lu: %u dbg %u %u %u %lu %lu %u %lu %lu %lu %u %lu %u %u\n",
       call LocalTime.get(),
       TOS_NODE_ID,
       m->seqno,
@@ -257,10 +264,17 @@ implementation
 
 
   event message_t *
-  RadioReceive.receive[collection_id_t](message_t * msg, void * payload, uint8_t len) {
+  RadioReceive.receive[collection_id_t type](message_t * msg, void * payload, uint8_t len) {
     #ifdef PRINTF_H
-    printf("%lu: 0x%04x data-rx 0x%04x %u\n", call LocalTime.get(), TOS_NODE_ID, call CollectionPacket.getOrigin(msg), call CollectionPacket.getType(msg));
-    printfflush();
+    uint8_t hops = ((orinoco_data_header_t *)(payload + len))->hopCnt;
+    if (type == ORINOCO_AM_CMDCFRM) {
+      OrinocoCommandAckMsg * p = (OrinocoCommandAckMsg *)payload;
+      printf("%lu: %u bf-rx-conf %u %u %u %u\n", call LocalTime.get(), TOS_NODE_ID, call CollectionPacket.getOrigin(msg), type, hops, p->version);
+      printfflush();
+    } else {
+      printf("%lu: %u data-rx %u %u %u\n", call LocalTime.get(), TOS_NODE_ID, call CollectionPacket.getOrigin(msg), type, hops);
+      printfflush();
+    }
     #endif
 
     return qInsert(msg);

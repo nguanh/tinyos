@@ -139,13 +139,16 @@ implementation {
     // This may be problematic because it emits a lot of data all the time...
     #ifdef PRINTF_H
       if (txBeaconDst_ != AM_BROADCAST_ADDR) {
-        printf("%lu: 0x%04x tx-ack 0x%04x (%u, %u)\n", 
-             call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, (p->route.version & ~SHORT_BEACON), (p->route.version & SHORT_BEACON) ? 1 : 0);
+        printf("%lu: %u ack-tx %u (%u, %u)\n", 
+             call LocalTime.get(), TOS_NODE_ID, txBeaconDst_,
+             (p->route.version & ~SHORT_BEACON), (p->route.version & SHORT_BEACON) ? 1 : 0);
+        printfflush();
       } else {
-        printf("%lu: 0x%04x tx-beac (%u, %u)\n", 
-             call LocalTime.get(), TOS_NODE_ID, (p->route.version & ~SHORT_BEACON), (p->route.version & SHORT_BEACON) ? 1 : 0);
+        printf("%lu: %u beac-tx (%u, %u)\n", 
+             call LocalTime.get(), TOS_NODE_ID, (p->route.version & ~SHORT_BEACON),
+             (p->route.version & SHORT_BEACON) ? 1 : 0);
+        printfflush();
       }
-      printfflush();
     #endif
     
     // send short beacon (without Bloom filter) if requested by routing sublayer
@@ -208,7 +211,7 @@ implementation {
     if (! accept) ps_.numIgnoredBeacons++;
 #endif
 
-    //printf("%lu: processing beacon from 0x%04x, accept = %u\n", call LocalTime.get(), call SubAMPacket.source(msg), accept);
+    //printf("%lu: processing beacon from %u, accept = %u\n", call LocalTime.get(), call SubAMPacket.source(msg), accept);
     //printfflush();
     
     return accept;

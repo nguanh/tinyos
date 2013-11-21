@@ -9,7 +9,8 @@
 PACKETLENGTH=80
 
 ########## Maximum printf length (for buffer allocation)
-PRINTFMSGLENGTH=60
+PRINTF_MSG_LENGTH=80
+PRINTF_BUFFER_SIZE=400
 
 ########## Radio channel (11-26 in 2.4GHz)
 CC2420CHANNEL=18
@@ -31,8 +32,12 @@ else
     PACKETLENGTH=28# TOSROOT/tos/chips/cc2420/CC2420.h:153, TOSROOT/tos/types/message.h:7
   endif 
 
-  ifneq ($(strip $(PRINTFMSGLENGTH)),)
-    CFLAGS += -DPRINTF_MSG_LENGTH=$(PRINTFMSGLENGTH)
+  ifneq ($(strip $(PRINTF_MSG_LENGTH)),)
+    CFLAGS += -DPRINTF_MSG_LENGTH=$(PRINTF_MSG_LENGTH)
+  endif
+
+  ifneq ($(strip $(PRINTF_BUFFER_SIZE)),)
+    CFLAGS += -DPRINTF_BUFFER_SIZE=$(PRINTF_BUFFER_SIZE)
   endif
 
   ifeq ($(findstring $(PLATFORM),iris), iris)

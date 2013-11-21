@@ -110,7 +110,7 @@ implementation {
     }
         
     #ifdef PRINTF_H
-    printf("%lu: 0x%04x bloom-hashes", call Clock.get(), localId_);
+    printf("%lu: %u bf-hashes", call Clock.get(), localId_);
     for (i=0; i<BLOOM_HASHES; i++) printf(" %d", bp_.hashes[i]);
     printf("\n");
     printfflush();
@@ -140,7 +140,7 @@ implementation {
     payload->result = status;
 
     #ifdef PRINTF_H
-    printf("%lu: 0x%04x tx-bf-conf (%u, %u, %u)\n", call Clock.get(), localId_, cmd, version, status);
+    printf("%lu: %u bf-tx-conf (%u, %u, %u)\n", call Clock.get(), localId_, cmd, version, status);
     printfflush();
     #endif
 
@@ -163,8 +163,6 @@ implementation {
         dump[i*8+j] = (((curRouting_.bloom[i])&(0x80>>j))>0)?'1':'0';
       }
     }
-    printf("%lu: 0x%04x rx-bf (%u, %s)\n", call Clock.get(), TOS_NODE_ID, curRouting_.version, dump);
-    printfflush();
     #endif
   }
   
@@ -202,7 +200,7 @@ implementation {
       }
       
       #ifdef PRINTF_H
-      printf("%lu: 0x%04x bf-up (%u, %u)\n", call Clock.get(), localId_, curVersion_, route->version);
+      printf("%lu: %u bf-up (%u, %u)\n", call Clock.get(), localId_, curVersion_, route->version);
       printfflush();  
       #endif
 
@@ -228,13 +226,13 @@ implementation {
     if (beaconOverride_ == BEACON_FORCE_SHORT) {
       txLongBeaconProb_ = 0;
       #ifdef PRINTF_H
-        printf("%lu: 0x%04x bf-force-short\n", call Clock.get(), TOS_NODE_ID);
+        printf("%lu: %u bf-force-short\n", call Clock.get(), TOS_NODE_ID);
         printfflush();
       #endif
     } else if (beaconOverride_ == BEACON_FORCE_LONG) {
       txLongBeaconProb_ = 255;    
       #ifdef PRINTF_H
-        printf("%lu: 0x%04x bf-force-long\n", call Clock.get(), TOS_NODE_ID);
+        printf("%lu: %u bf-force-long\n", call Clock.get(), TOS_NODE_ID);
         printfflush();
       #endif
     } else {
@@ -242,7 +240,7 @@ implementation {
       txLongBeaconProb_ = (rxOldBeaconsInLastCycle_ << 8) / rxBeaconsInLastCycle_;
 
       #ifdef PRINTF_H
-        printf("%lu: 0x%04x bf-force-long (%u, %u, %u)\n", call Clock.get(), TOS_NODE_ID, rxBeaconsInLastCycle_, rxOldBeaconsInLastCycle_,txLongBeaconProb_);
+        printf("%lu: %u bf-lbprob (%u, %u, %u)\n", call Clock.get(), TOS_NODE_ID, rxBeaconsInLastCycle_, rxOldBeaconsInLastCycle_,txLongBeaconProb_);
         printfflush();
       #endif
     }      
@@ -271,9 +269,9 @@ implementation {
 
     #ifdef PRINTF_H
     if ((shortBcnTxCount_ + longBcnTxCount_) % 100 == 0) {
-      printf("%lu: 0x%04x beac-stat (%lu, %lu)\n", call Clock.get(), localId_, shortBcnTxCount_,longBcnTxCount_);
+      printf("%lu: %u beac-stat (%lu, %lu)\n", call Clock.get(), localId_, shortBcnTxCount_,longBcnTxCount_);
+      printfflush();  
     }
-    printfflush();  
     #endif
     
     return &curRouting_;
@@ -321,6 +319,11 @@ implementation {
       curRouting_.version++;
     }
     lastBeaconDestination_ = 0;
+
+    #ifdef PRINTF_H
+    printf("%lu: %u bf-inc %u\n", call Clock.get(), TOS_NODE_ID, curVersion_);
+    printfflush();
+    #endif
   }
 
   command void OrinocoRoutingRoot.resetBloomFilter() {
