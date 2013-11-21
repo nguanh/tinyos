@@ -8,6 +8,9 @@
 ########## Maximum data length (for buffer allocation)
 PACKETLENGTH=80
 
+########## Maximum data length (for buffer allocation)
+PRINTF_MSG_LENGTH=60
+
 ########## Radio channel (11-26 in 2.4GHz)
 CC2420CHANNEL=18
 RF230CHANNEL=12

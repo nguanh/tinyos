@@ -181,7 +181,7 @@ implementation
   event void AliveTimer.fired() {
     call OrinocoRoutingRoot.addDestination(addr);
     #ifdef PRINTF_H
-    printf("%lu: %u bfadd 0x%04x\n", call LocalTime.get(), TOS_NODE_ID, addr);
+    printf("%lu: 0x%04x bf-add 0x%04x\n", call LocalTime.get(), TOS_NODE_ID, addr);
     printfflush();
     #endif
     addr++;
@@ -217,7 +217,7 @@ implementation
     //call RadioSend.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
     
     OrinocoDebugReportingMsg * m = (OrinocoDebugReportingMsg *)payload;
-    printf("%lu: %u debug %u %u %u %lu %lu %u %lu %lu %lu %u %lu %u %u\n",
+    printf("%lu: 0x%04x debug %u %u %u %lu %lu %u %lu %lu %lu %u %lu %u %u\n",
       call LocalTime.get(),
       TOS_NODE_ID,
       m->seqno,
@@ -258,6 +258,11 @@ implementation
 
   event message_t *
   RadioReceive.receive[collection_id_t](message_t * msg, void * payload, uint8_t len) {
+    #ifdef PRINTF_H
+    printf("%lu: 0x%04x data-rx 0x%04x %u\n", call LocalTime.get(), TOS_NODE_ID, call CollectionPacket.getOrigin(msg), call CollectionPacket.getType(msg));
+    printfflush();
+    #endif
+
     return qInsert(msg);
   }
 

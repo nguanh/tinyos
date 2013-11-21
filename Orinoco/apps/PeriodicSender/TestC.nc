@@ -102,7 +102,7 @@ implementation {
       result = call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(cnt));
       #ifdef PRINTF_H
       if (SUCCESS == result) {
-        printf("%lu: 0x%04x data %u\n", call LocalTime.get(), TOS_NODE_ID, cnt);
+        printf("%lu: 0x%04x data-tx %u\n", call LocalTime.get(), TOS_NODE_ID, cnt);
         printfflush();
       } else {
         printf("%lu: 0x%04x data-fail %u\n", call LocalTime.get(), TOS_NODE_ID, cnt);
@@ -123,7 +123,7 @@ implementation {
     error_t returnCode;
     
     #ifdef PRINTF_H
-      printf("%lu: %u rx-cmd %u\n", call LocalTime.get(), TOS_NODE_ID, identifier);
+      printf("%lu: 0x%04x rx-cmd %u\n", call LocalTime.get(), TOS_NODE_ID, identifier);
       printfflush();
     #endif
     
@@ -161,6 +161,7 @@ implementation {
     }
 
     // call this if you want the node to acknowledge the execution of the command
+    // TODO do we need output here?
     call OrinocoRouting.confirmCommandExecution(cmd, identifier, returnCode);
   }
 
@@ -183,7 +184,7 @@ implementation {
     //call Send.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
     
     OrinocoDebugReportingMsg * m = (OrinocoDebugReportingMsg *)payload;
-    printf("%lu: %u debug %u %u %u %lu %lu %u %lu %lu %lu %u %lu %u %u\n",
+    printf("%lu: 0x%04x debug %u %u %u %lu %lu %u %lu %lu %lu %u %lu %u %u\n",
       call LocalTime.get(),
       TOS_NODE_ID,
       m->seqno,
