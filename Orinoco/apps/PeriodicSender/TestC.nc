@@ -64,6 +64,7 @@ module TestC {
     interface Leds;
     
     interface LocalTime<TMilli>;
+    interface Random;
     
     // Orinoco Stats
     interface Receive as OrinocoStatsReporting;
@@ -88,7 +89,7 @@ implementation {
     call OrinocoConfig.setMinQueueSize(1);
 
     // start our packet timer
-    call Timer.startOneShot(delay);
+    call Timer.startOneShot(1 + (call Random.rand32() % delay));
   }
 
   event void Timer.fired() {
@@ -123,7 +124,7 @@ implementation {
     error_t returnCode;
     
     #ifdef PRINTF_H
-      printf("%lu: %u rx-cmd %u\n", call LocalTime.get(), TOS_NODE_ID, identifier);
+      printf("%lu: %u cmd-rx %u\n", call LocalTime.get(), TOS_NODE_ID, identifier);
       printfflush();
     #endif
     

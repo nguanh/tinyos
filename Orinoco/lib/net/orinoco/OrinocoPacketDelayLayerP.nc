@@ -61,7 +61,7 @@ implementation {
   orinoco_delay_footer_t * getFooter(message_t * msg) {
     // add orinoco footer to the end of the packet (behind regular payload)
     // to avoid packet copying for, e.g., serial transmission at the sink
-    // (the orinico header would be between real payload and header!)
+    // (the orinico footer would be between real payload and header!)
     return (orinoco_delay_footer_t *)
       (call SubPacket.getPayload(msg, call SubPacket.maxPayloadLength())
       + call Packet.payloadLength(msg));

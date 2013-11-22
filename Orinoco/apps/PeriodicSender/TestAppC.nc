@@ -76,6 +76,9 @@ implementation {
   components LocalTimeMilliC;
   TestC.LocalTime -> LocalTimeMilliC;
   
+  components RandomC;
+  TestC.Random -> RandomC;
+  
   components OrinocoDebugReportingJobC;
   OrinocoDebugReportingJobC.Packet -> OrinocoP;
   TestC.OrinocoDebugReporting   -> OrinocoDebugReportingJobC;

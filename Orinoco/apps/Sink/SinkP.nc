@@ -154,6 +154,9 @@ implementation
   event void Boot.booted() {
     uint8_t i;
 
+printf("fick dich\n");
+printfflush();
+
     atomic {
       for (i = 0; i < UART_QUEUE_LEN; i++)
         uartQueue[i] = &uartQueueBufs[i];
@@ -272,7 +275,7 @@ implementation
       printf("%lu: %u bf-rx-conf %u %u %u %u\n", call LocalTime.get(), TOS_NODE_ID, call CollectionPacket.getOrigin(msg), type, hops, p->version);
       printfflush();
     } else {
-      printf("%lu: %u data-rx %u %u %u\n", call LocalTime.get(), TOS_NODE_ID, call CollectionPacket.getOrigin(msg), type, hops);
+      printf("%lu: %u data-rx %u %u %u %u\n", call LocalTime.get(), TOS_NODE_ID, call CollectionPacket.getOrigin(msg), type, *((nx_uint16_t *)payload), hops);
       printfflush();
     }
     #endif

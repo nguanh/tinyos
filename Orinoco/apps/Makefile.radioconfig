@@ -13,7 +13,7 @@ PRINTF_MSG_LENGTH=80
 PRINTF_BUFFER_SIZE=400
 
 ########## Radio channel (11-26 in 2.4GHz)
-CC2420CHANNEL=18
+CC2420CHANNEL=12
 RF230CHANNEL=12
 
 ########## Radio TX Power (see below for values)

@@ -117,7 +117,6 @@ implementation {
   OrinocoRoutingRoot   = OrinocoRoutingC; // interface OrinocoRoutingRoot
   OrinocoRoutingClient = OrinocoRoutingC; // interface OrinocoRoutingClient
   Mac.Routing -> OrinocoRoutingC;         // interface OrinocoRoutingInternal
-  SplitControl = OrinocoRoutingC;
   
   components RandomC;
   Mac.Random -> RandomC;
