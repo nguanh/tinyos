@@ -183,9 +183,6 @@ implementation {
       // check path cost (this must be always be the first call)
       accept = call PathCost.inspectBeacon(msg, p->cost, update);
       
-//       printf("%lu: %u DBG %u %u %u %u\n", call LocalTime.get(), TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), accept, (p->flags & ORINOCO_BEACON_FLAGS_ACCEPTSDATA) ? 1 : 0);
-//       printfflush();
-      
       // check if sender is willing to accept additional data
       // NOTE beacons serve as implicit acks. A sender may not be willing to
       // receive additional packets if, e.g., its queue is full.
