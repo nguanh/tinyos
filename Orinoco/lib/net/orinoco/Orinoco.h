@@ -92,6 +92,7 @@ typedef nx_struct {
 #ifdef ORINOCO_DEBUG_PATH
   nx_uint8_t          path[ORINOCO_MAX_PATH_RECORD];
 #endif
+  nx_uint16_t         routingVersion; // to trigger sending updated Bloom filter
 } orinoco_data_header_t;
 
 typedef nx_struct {

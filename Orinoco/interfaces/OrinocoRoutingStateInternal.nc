@@ -39,19 +39,12 @@
  * @date August 28, 2013
  */
 
-interface OrinocoRoutingInternal {
+interface OrinocoRoutingStateInternal {
 
-  // notify routing of new incoming Bloom Filter
-  command void updateBloomFilter(const orinoco_routing_t * newFilter);
-
-  // get current filter for piggybacking on outbound messages
-  command const orinoco_routing_t * getCurrentBloomFilter();
-
-  // get version of current filter
-  command uint16_t getRoutingVersionNumber(void);
-
-  // does the Bloom filter indicate packets for us?
-  command bool packetAvailableForUs(void);
+  // Get the routing version contained in the Orinoco header of the provided packet
+  command uint16_t getPacketRoutingInformationVersion(message_t *msg);
   
+  // Set the routing version contained in transmitted packets
+  command void setRoutingInformationVersion(uint16_t version);
 }
 

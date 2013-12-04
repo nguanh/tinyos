@@ -95,10 +95,11 @@ implementation {
   Queue.SubSend        -> OrinocoRadioC;
   Queue.PacketDelayMilli -> OrinocoRadioC;
   OrinocoRadioC.QueueStatus -> Queue;
-
+  
   // routing
   OrinocoRoutingRoot   = OrinocoRadioC;
   OrinocoRoutingClient = OrinocoRadioC;
+  OrinocoRadioC.RoutingState -> Queue.OrinocoRoutingStateInternal;
   
   // config
   components OrinocoConfigC;

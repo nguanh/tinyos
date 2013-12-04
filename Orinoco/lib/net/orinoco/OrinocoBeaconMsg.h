@@ -9,14 +9,14 @@
 #include "Orinoco.h"
 
 typedef enum {
-  ORINOCO_BEACON_FLAGS_ACCEPTSDATA  = 0x01
+  ORINOCO_BEACON_FLAGS_ACCEPTSDATA   = 0x01,
+  ORINOCO_BEACON_FLAGS_CONTAINSROUTE = 0x02,
 } orinoco_beacon_flags_t;
 
 typedef enum {
   BLOOM_BYTES = 8,             // bytes in the Bloom filter (x8 for bits)
   BLOOM_HASHES = 3,            // number of hashes to calculate per entry
-  BLOOM_VERSION_MAX = 0x7080,  // maximum version number of filter (must be <0x7FFF)
-  SHORT_BEACON = 0x8000,       // packet carries a Bloom filter (0x0000) or not (0x8000)
+  BLOOM_VERSION_MAX = 0xFE00,  // maximum version number of filter
 } orinoco_routing_parameters_t;
 
 typedef struct {

@@ -62,6 +62,7 @@ configuration OrinocoRadioC {
     interface OrinocoPathCost;
     interface OrinocoTrafficUpdates as TrafficUpdates;
     interface OrinocoTrafficStatistics as TrafficStatistics;
+    interface OrinocoRoutingStateInternal as RoutingState;
   }
 }
 implementation {
@@ -75,7 +76,8 @@ implementation {
   OrinocoPathCost   = Mac;
   TrafficUpdates    = Mac;
   TrafficStatistics = Mac;
-
+  RoutingState      = Mac;
+  
   // why do we use active messages at all?
   components ActiveMessageC as AM;
   Mac.SubControl       -> AM;
