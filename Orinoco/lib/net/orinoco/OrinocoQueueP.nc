@@ -63,6 +63,9 @@ module OrinocoQueueP {
     // cache comparer for packet history
     interface CacheCompare<mc_entry_t>;
 
+    // find out which routing version a received packet has
+    interface OrinocoRoutingStateInternal;
+    
 #ifdef ORINOCO_DEBUG_STATISTICS
     interface Get<const orinoco_queue_statistics_t *> as QueueStatistics;
 #endif
@@ -90,10 +93,11 @@ module OrinocoQueueP {
 }
 implementation {
   // local state information
-  bool     isForwarding_ = TRUE;
-  bool     isRoot_       = FALSE;
-  uint8_t  seqno_        = 0;
-
+  bool     isForwarding_   = TRUE;
+  bool     isRoot_         = FALSE;
+  uint8_t  seqno_          = 0;
+  uint16_t routingVersion_ = 0;
+  
   // statistics
 #ifdef ORINOCO_DEBUG_STATISTICS
   orinoco_queue_statistics_t  qs_ = {0};
@@ -119,6 +123,14 @@ implementation {
     post selfReceiveTask();
   }
 
+  orinoco_data_header_t * getHeader(message_t * msg) {
+    // add orinoco header to the end of the packet (behind regular payload)
+    // to avoid packet copying for, e.g., serial transmission at the sink
+    // (the orinico header would be between real payload and header!)
+    return (orinoco_data_header_t *)
+      (call SubPacket.getPayload(msg, call SubPacket.maxPayloadLength())
+      + call Packet.payloadLength(msg));
+  }
 
   /* sending of packet */
   // @param force if TRUE, the minimum queue level for sending is ignored
@@ -132,6 +144,9 @@ implementation {
         (force || call SendQueue.size() >= call Config.getMinQueueSize()))
     {
       mq_entry_t  qe = call SendQueue.head();
+      message_t* msg = qe.msg;
+      orinoco_data_header_t* hdr = getHeader(msg);
+      hdr->routingVersion = routingVersion_;
       if (SUCCESS == call SubSend.send(qe.msg, call SubPacket.payloadLength(qe.msg))) {
 #ifdef ORINOCO_DEBUG_PRINTF
         printf("%u que tx %p\n", TOS_NODE_ID, qe.msg);
@@ -197,14 +212,16 @@ implementation {
     // return new space for next reception
     return msg;
   }
+  
+  /***** Maintain routing state fields *****************************************/
 
-  orinoco_data_header_t * getHeader(message_t * msg) {
-    // add orinoco header to the end of the packet (behind regular payload)
-    // to avoid packet copying for, e.g., serial transmission at the sink
-    // (the orinico header would be between real payload and header!)
-    return (orinoco_data_header_t *)
-      (call SubPacket.getPayload(msg, call SubPacket.maxPayloadLength())
-      + call Packet.payloadLength(msg));
+  command void OrinocoRoutingStateInternal.setRoutingInformationVersion(uint16_t ver) {
+    routingVersion_ = ver;
+  }
+
+  command uint16_t OrinocoRoutingStateInternal.getPacketRoutingInformationVersion(message_t *msg) {
+    orinoco_data_header_t* hdr = getHeader(msg);
+    return hdr->routingVersion;
   }
 
 
@@ -320,9 +337,10 @@ implementation {
     for (i = 0; i < ORINOCO_MAX_PATH_RECORD; i++) h->path[i] = 0x00;
 #endif
     h->type   = type;
-
+    h->routingVersion = routingVersion_;
+    
 #ifdef ORINOCO_DEBUG_PRINTF
-    printf("%u que in %u %u %u %p\n", TOS_NODE_ID, h->origin, h->seqno, h->hopCnt, msg);
+    printf("%u que in %u %u %u %u %p\n", TOS_NODE_ID, h->origin, h->seqno, h->hopCnt, h->routingVersion, msg);
     printfflush();
 #endif
 

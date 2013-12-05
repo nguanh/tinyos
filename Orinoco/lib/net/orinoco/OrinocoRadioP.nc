@@ -83,7 +83,8 @@ module OrinocoRadioP {
 //    interface PacketField<uint8_t> as PacketRSSI;
 
     // routing
-    interface OrinocoRoutingInternal as Routing; 
+    interface OrinocoRoutingInternal      as Routing; 
+    interface OrinocoRoutingStateInternal as RoutingState;
 
     // configuration
     interface OrinocoConfig as Config;
@@ -113,6 +114,12 @@ implementation {
 
   bool         beaconCancel_ = FALSE; // marks whether an attempt to send data was aborted due to a beacon (ack) reception
 
+  am_addr_t    lastBeaconDestination_ = AM_BROADCAST_ADDR;
+  uint16_t     rxRouteVersion_ = 0;
+  
+  // statistics
+  uint32_t  shortBcnTxCount_ = 0, longBcnTxCount_ = 0;
+
 #ifdef ORINOCO_DEBUG_STATISTICS
   orinoco_packet_statistics_t   ps_ = {0};
 #endif
@@ -134,35 +141,54 @@ implementation {
     if (call QueueStatus.acceptsRemote()) {
       p->flags |= ORINOCO_BEACON_FLAGS_ACCEPTSDATA;
     }
-    p->route = *(call Routing.getCurrentBloomFilter(txBeaconDst_));
 
-    // This may be problematic because it emits a lot of data all the time...
-    #ifdef PRINTF_H
-      if (txBeaconDst_ != AM_BROADCAST_ADDR) {
-        printf("%lu: %u ack-tx %u (%u, %u)\n", 
-             call LocalTime.get(), TOS_NODE_ID, txBeaconDst_,
-             (p->route.version & ~SHORT_BEACON), (p->route.version & SHORT_BEACON) ? 1 : 0);
-        printfflush();
-      } else {
-        printf("%lu: %u beac-tx (%u, %u)\n", 
-             call LocalTime.get(), TOS_NODE_ID, (p->route.version & ~SHORT_BEACON),
-             (p->route.version & SHORT_BEACON) ? 1 : 0);
-        printfflush();
-      }
-    #endif
+    // ACK beacon handling
+    if (   txBeaconDst_    != AM_BROADCAST_ADDR         // Beacon acts as ACK AND
+        && txBeaconDst_    != lastBeaconDestination_    // first ACK to this node AND
+        && rxRouteVersion_ != call Routing.getRoutingVersionNumber()) { // version differs
     
-    // send short beacon (without Bloom filter) if requested by routing sublayer
-    if (p->route.version & SHORT_BEACON) {
-      error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, 
-      	      sizeof(OrinocoBeaconMsg) - BLOOM_BYTES - 1); // strip cmd and bloom filter
-    } else {
-      error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg));
-    }
+      p->route = *(call Routing.getCurrentBloomFilter());
+      p->flags |= ORINOCO_BEACON_FLAGS_CONTAINSROUTE;
 
+      #ifdef PRINTF_H
+        //printf("L "); 
+        printf("%lu: %u bcl-tx %u (%u)\n", 
+                 call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, p->route.version);
+        printfflush();
+      #endif
+      
+      error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg));
+      if (error == SUCCESS) {
+        lastBeaconDestination_ = txBeaconDst_;
+        longBcnTxCount_++;
+      }
+
+    // Periodic beacons have no routing information (multiple successive ACKs neither)
+    } else { 
+      error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, 
+                 sizeof(OrinocoBeaconMsg) - sizeof(orinoco_routing_t));
+      if (error == SUCCESS) {
+        shortBcnTxCount_++; 
+      }
+      
+      /*#ifdef PRINTF_H
+        printf("S");
+        //printf("%lu: %u bcs-tx\n",call LocalTime.get(), TOS_NODE_ID);
+        printfflush();
+      #endif*/
+    }
+    
 #ifdef ORINOCO_DEBUG_PRINTF
     printf("%u ori bs %u %u %u %p %u\n", TOS_NODE_ID, TOS_NODE_ID, txBeaconDst_, p->seqno, &txBeaconMsg_, error);
     printfflush();
 #endif
+
+    #ifdef PRINTF_H
+    if ((shortBcnTxCount_ + longBcnTxCount_) % 100 == 0) {
+      printf("%lu: %u bc-stat (%lu, %lu)\n", call LocalTime.get(), TOS_NODE_ID, shortBcnTxCount_,longBcnTxCount_);
+      printfflush();  
+    }
+    #endif
 
     // reset beacon sending address (next one is no ack by default)
     txBeaconDst_ = AM_BROADCAST_ADDR;
@@ -199,10 +225,10 @@ implementation {
         txDataExpSeqno_   = p->seqno + 1;
       }
       
-      // forward beacon to routing subcomponent (regardless if accepted or not)
-      if (call SubAMPacket.destination(msg) == AM_BROADCAST_ADDR) {
-        // only broadcast beacons are considered (i.e. ignore ACK beacons)
-        call Routing.updateBloomFilter(&p->route, call SubAMPacket.source(msg));
+      // forward beacon to routing subcomponent (when routing information is contained)
+      if (p->flags & ORINOCO_BEACON_FLAGS_CONTAINSROUTE) {
+        call Routing.updateBloomFilter(&p->route);
+        call RoutingState.setRoutingInformationVersion(call Routing.getRoutingVersionNumber());
       }
     }
 
@@ -308,7 +334,6 @@ implementation {
 
     // start sleep timer and proceed to sleep state
     } else if (state_ == SLEEP_TIMER) {
-      call Routing.wakeUpCycleFinished();
       call Timer.startOneShot(getRandomSleepTime());
       state_ = SLEEP;
 
@@ -736,7 +761,15 @@ implementation {
 #endif
 
       txBeaconDst_ = call SubAMPacket.source(msg);  // store sender of data for beacon ack
-
+      
+      // [ROUTING]: Extract routing version from this packet to determine if full routing
+      //            information needs to be sent in the acknowledgment.
+      rxRouteVersion_ = call RoutingState.getPacketRoutingInformationVersion(msg);
+      /*#ifdef PRINTF_H
+        printf("%lu: %u rcv-data %u (%u)\n", call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, rxRouteVersion_);
+        printfflush();
+      #endif*/
+      
       // FIXME we *must* check if there is room in the queue (otherwise the packet cannot be stored and will be lost!
       // NOTE in general, we should not send beacons in this case at all!
       state_ = RECEIVE_SUBSEND;                  // and send another beacon
