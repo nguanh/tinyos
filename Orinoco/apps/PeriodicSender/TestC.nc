@@ -97,16 +97,16 @@ implementation {
     error_t  result;
     
     for (msgCnt = 0; msgCnt < MSG_BURST_LEN; msgCnt++) {
-      nx_uint16_t *d = call Packet.getPayload(&myMsg, sizeof(cnt));
+      nx_uint16_t *d = call Packet.getPayload(&myMsg, sizeof(*d));
       call Packet.clear(&myMsg);
       *d = cnt++;
-      result = call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(cnt));
+      result = call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(*d));
       #ifdef PRINTF_H
       if (SUCCESS == result) {
-        printf("%lu: %u data-tx %u\n", call LocalTime.get(), TOS_NODE_ID, cnt);
+        printf("%lu: %u data-tx %u\n", call LocalTime.get(), TOS_NODE_ID, *d);
         printfflush();
       } else {
-        printf("%lu: %u data-fail %u\n", call LocalTime.get(), TOS_NODE_ID, cnt);
+        printf("%lu: %u data-fail %u\n", call LocalTime.get(), TOS_NODE_ID, *d);
         printfflush();
       }
       #endif

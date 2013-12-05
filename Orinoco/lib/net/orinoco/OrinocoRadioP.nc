@@ -689,7 +689,7 @@ implementation {
     } else if (state_ == FORWARD_SUBSEND || state_ == FORWARD_SUBSEND_DONE) {
 #ifdef ORINOCO_DEBUG_PRINTF
       OrinocoBeaconMsg  * p     = call BeaconSubSend.getPayload(msg, sizeof(OrinocoBeaconMsg));
-      printf("%u ori br %u %u %u %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), p->seqno, txDataDst_, txDataExpSeqno_, msg);
+      printf("%u ori br! %u %u %u %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), p->seqno, txDataDst_, txDataExpSeqno_, msg);
       printfflush();
 #endif
     
