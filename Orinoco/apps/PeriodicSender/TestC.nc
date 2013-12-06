@@ -68,7 +68,10 @@ module TestC {
     
     // Orinoco Stats
     interface Receive as OrinocoStatsReporting;
+    
+    #ifdef ORINOCO_DEBUG_STATISTICS
     interface Receive as OrinocoDebugReporting;
+    #endif
   }
 }
 implementation {
@@ -181,9 +184,11 @@ implementation {
     return msg;
   }
 
+  #ifdef ORINOCO_DEBUG_STATISTICS
   event message_t * OrinocoDebugReporting.receive(message_t * msg, void * payload, uint8_t len) {
     //call Send.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
     
+    #ifdef PRINTF_H
     OrinocoDebugReportingMsg * m = (OrinocoDebugReportingMsg *)payload;
     printf("%lu: %u dbg %u %u %u %lu %lu %u %lu %lu %lu %u %lu %u %u\n",
       call LocalTime.get(),
@@ -202,7 +207,9 @@ implementation {
       m->ps.numTxTimeouts,
       m->ps.numMetricResets);
     printfflush();
+    #endif 
     
     return msg;
   }
+  #endif
 }

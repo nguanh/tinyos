@@ -79,7 +79,9 @@ implementation {
   components RandomC;
   TestC.Random -> RandomC;
   
+  #ifdef ORINOCO_DEBUG_STATISTICS
   components OrinocoDebugReportingJobC;
   OrinocoDebugReportingJobC.Packet -> OrinocoP;
   TestC.OrinocoDebugReporting   -> OrinocoDebugReportingJobC;
+  #endif
 }

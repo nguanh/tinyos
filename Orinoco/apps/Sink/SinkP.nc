@@ -154,8 +154,10 @@ implementation
   event void Boot.booted() {
     uint8_t i;
 
+#ifdef PRINTF_H
 printf("fick dich\n");
 printfflush();
+#endif
 
     atomic {
       for (i = 0; i < UART_QUEUE_LEN; i++)
@@ -226,6 +228,7 @@ printfflush();
   event message_t * OrinocoDebugReporting.receive(message_t * msg, void * payload, uint8_t len) {
     //call RadioSend.send[CID_ORINOCO_DEBUG_REPORT](msg, len);  // packet is copied or rejected
     
+    #ifdef PRINTF_H
     OrinocoDebugReportingMsg * m = (OrinocoDebugReportingMsg *)payload;
     printf("%lu: %u dbg %u %u %u %lu %lu %u %lu %lu %lu %u %lu %u %u\n",
       call LocalTime.get(),
@@ -244,6 +247,7 @@ printfflush();
       m->ps.numTxTimeouts,
       m->ps.numMetricResets);
     printfflush();
+    #endif
     
     return msg;
   }
