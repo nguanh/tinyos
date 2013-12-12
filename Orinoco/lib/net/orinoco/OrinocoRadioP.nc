@@ -122,7 +122,7 @@ implementation {
   uint16_t     rxRouteVersion_ = 0;
   
   // statistics
-  uint32_t  shortBcnTxCount_ = 0, longBcnTxCount_ = 0;
+  uint32_t  shortBcnTxCount_ = 0, longBcnTxCount_ = 0, errBcnTxCount_ = 0;
 
 #ifdef ORINOCO_DEBUG_STATISTICS
   orinoco_packet_statistics_t   ps_ = {0};
@@ -158,7 +158,7 @@ implementation {
     } else { 
       beaconLength = sizeof(OrinocoBeaconMsg) - sizeof(orinoco_routing_t);
     }
-
+    
     error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, beaconLength);
 
     if (error == SUCCESS) {
@@ -179,6 +179,7 @@ implementation {
     } else {
       //printf("%lu: %u bcn-fail\n",call LocalTime.get(), TOS_NODE_ID);
       //printfflush();
+      errBcnTxCount_++;
     }
     #endif
 
@@ -190,7 +191,8 @@ implementation {
 
     #ifdef PRINTF_H
     if ((shortBcnTxCount_ + longBcnTxCount_) % 100 == 0) {
-      printf("%lu: %u bc-stat (%lu, %lu)\n", call LocalTime.get(), TOS_NODE_ID, shortBcnTxCount_,longBcnTxCount_);
+      printf("%lu: %u bc-stat (%lu, %lu, %lu)\n", call LocalTime.get(), 
+      		TOS_NODE_ID, shortBcnTxCount_,longBcnTxCount_,errBcnTxCount_);
       printfflush();  
     }
     #endif
@@ -802,7 +804,7 @@ implementation {
       }*/
       dbg("ignored data (NOT in receive state)\n");
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u ori di %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
+      printf("%u ign di %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
       printfflush();
 #endif
     } else {
@@ -834,7 +836,7 @@ implementation {
 #endif
 
     if (error == SUCCESS) {
-      state_++;   // ok -> next state
+      state_++;   // ok -> next state (RECEIVE_TIMER)
     } else {
 #ifdef ORINOCO_DEBUG_PRINTF
       printf("%u ori bf %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
