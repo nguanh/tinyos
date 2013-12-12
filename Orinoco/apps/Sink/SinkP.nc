@@ -102,7 +102,7 @@ module SinkP @safe() {
 
 
 #ifndef SLEEP_DURATION
-#  define SLEEP_DURATION 1024
+#  define SLEEP_DURATION 256
 #endif
 #ifndef BLOOM_ADD_NODE_INTVL
 #  define BLOOM_ADD_NODE_INTVL 307200UL

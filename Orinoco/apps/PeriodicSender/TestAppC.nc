@@ -53,6 +53,8 @@ implementation {
   #ifdef PRINTF_H
   components PrintfC;
   components SerialStartC;
+  components LocalTimeMilliC;
+  TestC.LocalTime -> LocalTimeMilliC;
   #endif
   
   TestC.Boot              -> MainC.Boot;
@@ -72,9 +74,6 @@ implementation {
 
   components LedsC;
   TestC.Leds -> LedsC;
-
-  components LocalTimeMilliC;
-  TestC.LocalTime -> LocalTimeMilliC;
   
   components RandomC;
   TestC.Random -> RandomC;

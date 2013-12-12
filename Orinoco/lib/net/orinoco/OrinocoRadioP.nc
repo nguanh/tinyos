@@ -66,7 +66,11 @@ module OrinocoRadioP {
   uses {
     interface SplitControl as SubControl;
     interface Timer<TMilli>;
+
+    #ifdef PRINTF_H
     interface LocalTime<TMilli>;
+    #endif
+
     interface QueueStatus;
 
     // sending and receiving
@@ -131,7 +135,8 @@ implementation {
   error_t sendBeacon() {
     OrinocoBeaconMsg  * p;
     error_t             error;
-
+    uint8_t             beaconLength;
+    
     call SubPacket.clear(&txBeaconMsg_);
     p = call BeaconSubSend.getPayload(&txBeaconMsg_, sizeof(OrinocoBeaconMsg));
     p->cost   = call PathCost.getCost();
@@ -149,34 +154,34 @@ implementation {
     
       p->route = *(call Routing.getCurrentBloomFilter());
       p->flags |= ORINOCO_BEACON_FLAGS_CONTAINSROUTE;
-
-      #ifdef PRINTF_H
-        //printf("L "); 
-        printf("%lu: %u bcl-tx %u (%u)\n", 
-                 call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, p->route.version);
-        printfflush();
-      #endif
-      
-      error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg));
-      if (error == SUCCESS) {
-        lastBeaconDestination_ = txBeaconDst_;
-        longBcnTxCount_++;
-      }
-
-    // Periodic beacons have no routing information (multiple successive ACKs neither)
+      beaconLength = sizeof(OrinocoBeaconMsg);
     } else { 
-      error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, 
-                 sizeof(OrinocoBeaconMsg) - sizeof(orinoco_routing_t));
-      if (error == SUCCESS) {
+      beaconLength = sizeof(OrinocoBeaconMsg) - sizeof(orinoco_routing_t);
+    }
+
+    error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, beaconLength);
+
+    if (error == SUCCESS) {
+      lastBeaconDestination_ = txBeaconDst_; 
+    }
+    
+    #ifdef PRINTF_H
+    if (error == SUCCESS) {
+      if (sizeof(OrinocoBeaconMsg) == beaconLength) {
+        //printf("%lu: %u bcl-tx %u (%u)\n", call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, p->route.version);
+        //printfflush();
+        longBcnTxCount_++;
+      } else {
+        //printf("%lu: %u bcs-tx\n",call LocalTime.get(), TOS_NODE_ID);
+        //printfflush();
         shortBcnTxCount_++; 
       }
-      
-      /*#ifdef PRINTF_H
-        printf("S");
-        //printf("%lu: %u bcs-tx\n",call LocalTime.get(), TOS_NODE_ID);
-        printfflush();
-      #endif*/
+    } else {
+      //printf("%lu: %u bcn-fail\n",call LocalTime.get(), TOS_NODE_ID);
+      //printfflush();
     }
+    #endif
+
     
 #ifdef ORINOCO_DEBUG_PRINTF
     printf("%u ori bs %u %u %u %p %u\n", TOS_NODE_ID, TOS_NODE_ID, txBeaconDst_, p->seqno, &txBeaconMsg_, error);

@@ -44,7 +44,7 @@
 #include "OrinocoDebugReportingMsg.h"
 
 #define MSG_BURST_LEN      1    // number of packets per period (#)
-#define DATA_PERIOD    10240UL  // data creation period (ms)
+#define DATA_PERIOD    30720UL  // data creation period (ms)
 #define QUEUE_LIMIT        1    // aggregation degree (#)
 #define WAKEUP_INTVL    1024    // wake-up period (ms)
 
@@ -63,8 +63,11 @@ module TestC {
     interface QueueSend as Send[collection_id_t];
     interface Leds;
     
-    interface LocalTime<TMilli>;
     interface Random;
+
+    #ifdef PRINTF_H
+    interface LocalTime<TMilli>;
+    #endif    
     
     // Orinoco Stats
     interface Receive as OrinocoStatsReporting;
@@ -104,15 +107,15 @@ implementation {
       call Packet.clear(&myMsg);
       *d = cnt++;
       result = call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(*d));
-      #ifdef PRINTF_H
       if (SUCCESS == result) {
+        #ifdef PRINTF_H
         printf("%lu: %u data-tx %u\n", call LocalTime.get(), TOS_NODE_ID, *d);
         printfflush();
-      } else {
+        } else {
         printf("%lu: %u data-fail %u\n", call LocalTime.get(), TOS_NODE_ID, *d);
         printfflush();
+        #endif
       }
-      #endif
     }
     
     call Timer.startOneShot(delay);
