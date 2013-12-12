@@ -136,6 +136,7 @@ implementation {
     OrinocoBeaconMsg  * p;
     error_t             error;
     uint8_t             beaconLength;
+    uint16_t delay; 
     
     call SubPacket.clear(&txBeaconMsg_);
     p = call BeaconSubSend.getPayload(&txBeaconMsg_, sizeof(OrinocoBeaconMsg));
@@ -159,6 +160,8 @@ implementation {
       beaconLength = sizeof(OrinocoBeaconMsg) - sizeof(orinoco_routing_t);
     }
     
+    for (delay=0;delay<1536u;delay++) asm("nop");
+
     error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, beaconLength);
 
     if (error == SUCCESS) {
@@ -759,7 +762,8 @@ implementation {
     dbg("received data\n");
 
     // received data outside receive => ignore to ease handling
-    if (state_ == RECEIVE) {
+    // but include data received before returning to RECEIVE from RECEIVE_TIMER
+    if (state_ == RECEIVE || state_ == RECEIVE_TIMER) {
       call Timer.stop();  // just received data, stop timer
       
 #ifdef ORINOCO_DEBUG_PRINTF
@@ -804,13 +808,13 @@ implementation {
       }*/
       dbg("ignored data (NOT in receive state)\n");
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u ign di %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
+      printf("%u ori di %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
       printfflush();
 #endif
     } else {
       dbg("ignored data (NOT in receive state)\n");
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u ori di %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
+      printf("%u ori dz %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
       printfflush();
 #endif
     }
