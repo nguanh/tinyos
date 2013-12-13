@@ -86,6 +86,7 @@ implementation {
   Mac.BeaconSubReceive -> AM.Receive[ORINOCO_AM_BEACON];  // get all beacons (wire twice!)
   Mac.BeaconSubReceive -> AM.Snoop[ORINOCO_AM_BEACON];
   Mac.DataSubReceive   -> OrinocoPacketDelayLayerC; // AM.Receive[ORINOCO_AM_DATA];
+  Mac.DataSubSnoop     -> AM.Snoop[ORINOCO_AM_DATA];
   Mac.BeaconSubSend    -> AM.AMSend[ORINOCO_AM_BEACON];
   Mac.DataSubSend      -> OrinocoForwardLayerC; // AM.AMSend[ORINOCO_AM_DATA];
 

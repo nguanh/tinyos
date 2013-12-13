@@ -118,7 +118,7 @@ typedef struct {
 #  define ORINOCO_QUEUE_SIZE          30
 #endif
 #ifndef ORINOCO_PACKETHISTORY_SIZE
-#  define ORINOCO_PACKETHISTORY_SIZE  10
+#  define ORINOCO_PACKETHISTORY_SIZE  40
 #endif
 
 #endif /* ORINOCO_H */

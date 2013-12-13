@@ -48,6 +48,16 @@
 
 #define BLOOM_ADDR_MAX 100
 
+#ifndef SLEEP_DURATION
+#  define SLEEP_DURATION 384
+#endif
+#ifndef BLOOM_ADD_NODE_INTVL
+#  define BLOOM_ADD_NODE_INTVL 614400UL
+#endif
+//#pragma message "WAKEUP_INTVL =" WAKEUP_INTVL
+  
+
+
 /**
  * TODO
  * - print normal packet stats (delay of packet ?)
@@ -99,17 +109,6 @@ module SinkP @safe() {
     interface LocalTime<TMilli>;  
   }
 }
-
-
-#ifndef SLEEP_DURATION
-#  define SLEEP_DURATION 1024
-#endif
-#ifndef BLOOM_ADD_NODE_INTVL
-#  define BLOOM_ADD_NODE_INTVL 307200UL
-#endif
-//#pragma message "WAKEUP_INTVL =" WAKEUP_INTVL
-  
-
 implementation
 {
   enum {
@@ -153,11 +152,6 @@ implementation
 
   event void Boot.booted() {
     uint8_t i;
-
-#ifdef PRINTF_H
-printf("fick dich\n");
-printfflush();
-#endif
 
     atomic {
       for (i = 0; i < UART_QUEUE_LEN; i++)
@@ -231,21 +225,21 @@ printfflush();
     #ifdef PRINTF_H
     OrinocoDebugReportingMsg * m = (OrinocoDebugReportingMsg *)payload;
     printf("%lu: %u dbg %u %u %u %lu %lu %u %lu %lu %lu %u %lu %u %u\n",
-      call LocalTime.get(),
-      TOS_NODE_ID,
-      m->seqno,
-      m->qs.numPacketsDropped,
-      m->qs.numDuplicates,
-      m->ps.numTxBeacons,
-      m->ps.numTxAckBeacons,
-      m->ps.numTxBeaconsFail,
-      m->ps.numRxBeacons,
-      m->ps.numIgnoredBeacons,
-      m->ps.numTxPackets,
-      m->ps.numTxPacketsFail,
-      m->ps.numRxPackets,
-      m->ps.numTxTimeouts,
-      m->ps.numMetricResets);
+      call LocalTime.get(),    //  1
+      TOS_NODE_ID,             //  2
+      m->seqno,                //  3
+      m->qs.numPacketsDropped, //  4
+      m->qs.numDuplicates,     //  5
+      m->ps.numTxBeacons,      //  6
+      m->ps.numTxAckBeacons,   //  7
+      m->ps.numTxBeaconsFail,  //  8
+      m->ps.numRxBeacons,      //  9
+      m->ps.numIgnoredBeacons, // 10
+      m->ps.numTxPackets,      // 11
+      m->ps.numTxPacketsFail,  // 12
+      m->ps.numRxPackets,      // 13
+      m->ps.numTxTimeouts,     // 14
+      m->ps.numMetricResets);  // 15
     printfflush();
     #endif
     

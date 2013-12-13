@@ -128,7 +128,7 @@ implementation {
     payload->result = status;
 
     #ifdef PRINTF_H
-    printf("%lu: %u bf-tx-conf (%u, %u, %u)\n", call Clock.get(), localId_, cmd, version, status);
+    printf("%lu: %u bf-tx-conf %u %u %u\n", call Clock.get(), localId_, cmd, version, status);
     printfflush();
     #endif
 
@@ -225,7 +225,7 @@ implementation {
     uint16_t  myVersion = curRouting_.version;
     
     #ifdef PRINTF_H
-      printf("%lu: %u bf-rx (%u, %u)\n", call Clock.get(), localId_, myVersion, rxVersion);
+      printf("%lu: %u bf-rx %u %u\n", call Clock.get(), localId_, myVersion, rxVersion);
       printfflush();
     #endif
     
@@ -251,7 +251,7 @@ implementation {
       }
 
       #ifdef PRINTF_H
-      printf("%lu: %u bf-up (%u, %u)\n", call Clock.get(), localId_, myVersion, rxVersion);
+      printf("%lu: %u bf-up %u %u\n", call Clock.get(), localId_, myVersion, rxVersion);
       //printfflush();  
       #endif
 
