@@ -192,7 +192,7 @@ implementation {
 
     #ifdef PRINTF_H
     if ((shortBcnTxCount_ + longBcnTxCount_) % 100 == 0) {
-      printf("%lu: %u bc-stat %lu, %lu\n", call LocalTime.get(), TOS_NODE_ID, shortBcnTxCount_,longBcnTxCount_);
+      printf("%lu: %u bc-stat %lu %lu\n", call LocalTime.get(), TOS_NODE_ID, shortBcnTxCount_,longBcnTxCount_);
       printfflush();  
     }
     #endif
