@@ -173,6 +173,9 @@ implementation
     // demo function
     call Notify.enable();
     call AliveTimer.startPeriodic(BLOOM_ADD_NODE_INTVL);
+
+    printf("%lu boot\n", call LocalTime.get());
+    printfflush();
   }
 
   // DEBUG: This is a current test implementation to see if recipients 

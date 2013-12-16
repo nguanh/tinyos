@@ -95,6 +95,9 @@ implementation {
 
     // start our packet timer
     call Timer.startOneShot(1 + (call Random.rand32() % delay));
+
+    printf("%lu boot\n", call LocalTime.get());
+    printfflush();
   }
 
   event void Timer.fired() {

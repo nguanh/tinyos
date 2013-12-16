@@ -252,7 +252,7 @@ implementation {
 
       #ifdef PRINTF_H
       printf("%lu: %u bf-up %u %u\n", call Clock.get(), localId_, myVersion, rxVersion);
-      //printfflush();  
+      printfflush();  
       #endif
 
       //displayBloomFilter();    
