@@ -224,10 +224,19 @@ implementation {
     uint16_t  rxVersion = route->version;
     uint16_t  myVersion = curRouting_.version;
     
+        // FIXME hot fix for 16776 problem
+    if (rxVersion == 16776) {
+      #ifdef PRINTF_H
+      printf("%lu: %u bf-bad-beacon\n", call Clock.get(), localId_);
+      printfflush();
+      #endif
+      return; // no update
+    } else {
     #ifdef PRINTF_H
       printf("%lu: %u bf-rx %u %u\n", call Clock.get(), localId_, myVersion, rxVersion);
       printfflush();
     #endif
+    }
     
     if (rxVersion == myVersion) return; // no update
 

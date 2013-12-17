@@ -49,6 +49,7 @@ implementation {
   components TestC;
   components OrinocoP;
   components new TimerMilliC();
+  components new TimerMilliC() as BootTimer;
 
   #ifdef PRINTF_H
   components PrintfC;
@@ -57,6 +58,7 @@ implementation {
   
   TestC.Boot              -> MainC.Boot;
   TestC.Timer             -> TimerMilliC;
+  TestC.BootTimer         -> BootTimer;
   TestC.RadioControl      -> OrinocoP;
   TestC.ForwardingControl -> OrinocoP;
   TestC.Send              -> OrinocoP.Send;

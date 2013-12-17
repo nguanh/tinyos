@@ -56,6 +56,7 @@ module TestC {
   uses {
     interface Boot;
     interface Timer<TMilli>;
+    interface Timer<TMilli> as BootTimer;
     interface SplitControl as RadioControl;
     interface StdControl as ForwardingControl;
     interface RootControl;
@@ -93,12 +94,20 @@ implementation {
     call OrinocoConfig.setWakeUpInterval(WAKEUP_INTVL);  
     call OrinocoConfig.setMinQueueSize(1);
 
+    // boot sync
+    call BootTimer.startOneShot(1024);
+
     // start our packet timer
     call Timer.startOneShot(1 + (call Random.rand32() % delay));
 
-    printf("%lu boot\n", call LocalTime.get());
+  }
+
+  event void BootTimer.fired() {
+    // we need to delay this because printf is only set up at Boot.booted() and we cannot influence the order of event signalling
+    printf("%lu: %u sync\n", call LocalTime.get(), TOS_NODE_ID);
     printfflush();
   }
+
 
   event void Timer.fired() {
     uint8_t  msgCnt;

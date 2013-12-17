@@ -58,6 +58,9 @@ implementation {
   components new TimerMilliC() as AliveTimer;
   SinkP.AliveTimer -> AliveTimer;
 
+  components new TimerMilliC() as BootTimer;
+  SinkP.BootTimer -> BootTimer;
+
   components OrinocoP as Radio;
   SinkP.RootControl      -> Radio;
   SinkP.RoutingControl   -> Radio;

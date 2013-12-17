@@ -77,6 +77,7 @@ module SinkP @safe() {
     interface OrinocoConfig;
 
     interface Timer<TMilli> as AliveTimer;
+    interface Timer<TMilli> as BootTimer;
 
     // Uart
     interface AMSend as UartSend[am_id_t id];
@@ -112,7 +113,7 @@ module SinkP @safe() {
 implementation
 {
   enum {
-    UART_QUEUE_LEN = 40,
+    UART_QUEUE_LEN = 30,
   };
 
   message_t  uartQueueBufs[UART_QUEUE_LEN];
@@ -170,11 +171,16 @@ implementation
     call RadioControl.start();
     call SerialControl.start();
 
+    call BootTimer.startOneShot(1024);
+
     // demo function
     call Notify.enable();
     call AliveTimer.startPeriodic(BLOOM_ADD_NODE_INTVL);
+  }
 
-    printf("%lu boot\n", call LocalTime.get());
+  event void BootTimer.fired() {
+    // we need to delay this because printf is only set up at Boot.booted() and we cannot influence the order of event signalling
+    printf("%lu: %u sync\n", call LocalTime.get(), TOS_NODE_ID);
     printfflush();
   }
 
