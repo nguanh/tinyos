@@ -44,11 +44,11 @@
 
 typedef nx_struct OrinocoDebugReportingMsg {
   nx_data_seqno_t seqno;
-  nx_struct { // @see Statistics.h
+  nx_struct qs { // @see Statistics.h
     nx_uint16_t  numPacketsDropped;
     nx_uint16_t  numDuplicates;
   } qs;
-  nx_struct { // @see Statistics.h
+  nx_struct ps { // @see Statistics.h
     nx_uint32_t  numTxBeacons;
     nx_uint32_t  numTxAckBeacons;
     nx_uint16_t  numTxBeaconsFail;
