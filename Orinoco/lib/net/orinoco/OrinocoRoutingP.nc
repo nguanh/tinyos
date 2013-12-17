@@ -239,14 +239,6 @@ implementation {
     }
     
     if (rxVersion == myVersion) return; // no update
-
-    if (rxVersion > myVersion + 10) {
-      #ifdef PRINTF_H
-        printf("%lu: %u bf-err %u %u\n", call Clock.get()>>10, localId_, myVersion, rxVersion);
-        printfflush();
-      #endif
-      return; // erroneous update
-    }
     
     // If we get here, there is either:
     // (1) a newer version of the Bloom filter in the network or 
