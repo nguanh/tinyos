@@ -313,6 +313,14 @@ implementation {
     increaseRoutingVersion();
   }
   
+  command void OrinocoRoutingRoot.setBroadcast(void) {
+    uint8_t offset;
+    for (offset = 0; offset < BLOOM_BYTES; offset++) {
+      curRouting_.bloom[offset] = 0xFF;
+    }
+    increaseRoutingVersion();    
+  }
+  
   /****************************************************************************/
 
   // notification that node ID has changed   

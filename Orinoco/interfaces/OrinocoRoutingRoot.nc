@@ -53,5 +53,8 @@ interface OrinocoRoutingRoot {
   // add new destination to local Bloom filter
   command void addDestination(am_addr_t address);
 
+  // adds all nodes to the Bloom filter
+  command void setBroadcast();
+  
 }
 
