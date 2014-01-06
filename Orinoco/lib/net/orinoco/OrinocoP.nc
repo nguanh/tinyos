@@ -116,6 +116,9 @@ implementation {
   components new PoolC(message_t, ORINOCO_QUEUE_SIZE) as MsgPool;
   Queue.MsgPool    -> MsgPool;
 
+  components ActiveMessageAddressC as Address;
+  Queue.AMA -> Address;
+
   components new OrinocoCacheC(mc_entry_t, ORINOCO_PACKETHISTORY_SIZE) as PacketHistory;
   Queue.PacketHistory    -> PacketHistory;
   PacketHistory.CacheCompare -> Queue;

@@ -75,6 +75,7 @@ module OrinocoQueueP {
     interface Packet as SubPacket;
     interface Send as SubSend;
     interface Receive as SubReceive;
+    interface ActiveMessageAddress as AMA;
 
     // packet queueing
     interface Queue<mq_entry_t> as SendQueue;
@@ -149,7 +150,7 @@ implementation {
       hdr->routingVersion = routingVersion_;
       if (SUCCESS == call SubSend.send(qe.msg, call SubPacket.payloadLength(qe.msg))) {
 #ifdef ORINOCO_DEBUG_PRINTF
-        printf("%u que tx %p\n", TOS_NODE_ID, qe.msg);
+        printf("%u que tx %p\n", call AMA.amAddress(), qe.msg);
         printfflush();
 #endif
       }
@@ -177,7 +178,7 @@ implementation {
 #endif
 
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u que fx %p\n", TOS_NODE_ID, qe.msg);
+      printf("%u que fx %p\n", call AMA.amAddress(), qe.msg);
       printfflush();
 #endif
 
@@ -192,7 +193,7 @@ implementation {
 #endif
 
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u que fx %p\n", TOS_NODE_ID, qe.msg);
+      printf("%u que fx %p\n", call AMA.amAddress(), qe.msg);
       printfflush();
 #endif
       
@@ -202,7 +203,7 @@ implementation {
     }
 
 #ifdef ORINOCO_DEBUG_PRINTF
-    printf("%u que fw %p\n", TOS_NODE_ID, qe.msg);
+    printf("%u que fw %p\n", call AMA.amAddress(), qe.msg);
     printfflush();
 #endif
     
@@ -295,7 +296,7 @@ implementation {
 #endif
 
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u que rj\n", TOS_NODE_ID);
+      printf("%u que rj\n", call AMA.amAddress());
       printfflush();
 #endif
       
@@ -314,7 +315,7 @@ implementation {
 #endif
 
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u que rj\n", TOS_NODE_ID);
+      printf("%u que rj\n", call AMA.amAddress());
       printfflush();
 #endif
       
@@ -330,7 +331,7 @@ implementation {
     // NOTE must be done before storing in queue
     call Packet.setPayloadLength(msg, len);
     h = getHeader(msg);
-    h->origin = TOS_NODE_ID;  // TODO (replace by SubAMPacket.address() ?)
+    h->origin = call AMA.amAddress();  
     h->seqno  = seqno_++;
     h->hopCnt = 0;
 #ifdef ORINOCO_DEBUG_PATH
@@ -340,7 +341,7 @@ implementation {
     h->routingVersion = routingVersion_;
     
 #ifdef ORINOCO_DEBUG_PRINTF
-    printf("%u que in %u %u %u %u %p\n", TOS_NODE_ID, h->origin, h->seqno, h->hopCnt, h->routingVersion, msg);
+    printf("%u que in %u %u %u %u %p\n", call AMA.amAddress(), h->origin, h->seqno, h->hopCnt, h->routingVersion, msg);
     printfflush();
 #endif
 
@@ -363,7 +364,7 @@ implementation {
 #endif
 
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u que xx\n", TOS_NODE_ID);
+      printf("%u que xx\n", call AMA.amAddress());
       printfflush();
 #endif
       
@@ -421,7 +422,7 @@ implementation {
         call SendQueue.dequeue();
 
 #ifdef ORINOCO_DEBUG_PRINTF 
-        printf("%u que rm %p\n", TOS_NODE_ID, msg);
+        printf("%u que rm %p\n", call AMA.amAddress(), msg);
         printfflush();
 #endif
       } else {
@@ -447,7 +448,7 @@ implementation {
     h = getHeader(msg);
 #ifdef ORINOCO_DEBUG_PATH
     if (h->hopCnt < ORINOCO_MAX_PATH_RECORD && ! call RootControl.isRoot()) {
-      h->path[h->hopCnt] = TOS_NODE_ID;  // TODO call SubAMPacket.address() ?
+      h->path[h->hopCnt] = call AMA.amAddress();  // TODO call SubAMPacket.address() ?
     }
 #endif
     h->hopCnt++;  // we're one hop away from previous station
@@ -464,7 +465,7 @@ implementation {
     mc.hopCnt = call RootControl.isRoot() ? 0 : h->hopCnt;
 
 #ifdef ORINOCO_DEBUG_PRINTF
-    printf("%u que rx %u %u %u %p\n", TOS_NODE_ID, h->origin, h->seqno, h->hopCnt, msg);
+    printf("%u que rx %u %u %u %p\n", call AMA.amAddress(), h->origin, h->seqno, h->hopCnt, msg);
     printfflush();
 #endif
 
@@ -475,7 +476,7 @@ implementation {
 #endif
 
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u que q2 %u %u %u %p\n", TOS_NODE_ID, h->origin, h->seqno, h->hopCnt, msg);
+      printf("%u que q2 %u %u %u %p\n", call AMA.amAddress(), h->origin, h->seqno, h->hopCnt, msg);
       printfflush();
 #endif
       
@@ -573,6 +574,7 @@ implementation {
   }
 #endif
 
+  async event void AMA.changed() { }
 }
 
 /* eof */

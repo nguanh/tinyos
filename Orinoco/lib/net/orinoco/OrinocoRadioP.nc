@@ -85,6 +85,7 @@ module OrinocoRadioP {
     interface Receive  as DataSubSnoop;
     interface AMSend   as BeaconSubSend;
     interface AMSend   as DataSubSend;
+    interface ActiveMessageAddress as AMA;
 
     // path metric
     interface OrinocoPathCost as PathCost;
@@ -161,7 +162,7 @@ implementation {
 
 //       #ifdef PRINTF_H
 //         printf("%lu: %u bcl-tx %u (%u)\n", 
-//                  call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, p->route.version);
+//                  call LocalTime.get(), call AMA.amAddress(), txBeaconDst_, p->route.version);
 //         printfflush();
 //       #endif
       
@@ -180,19 +181,19 @@ implementation {
       }
       
 //       #ifdef PRINTF_H
-//         printf("%lu: %u bcs-tx\n", call LocalTime.get(), TOS_NODE_ID);
+//         printf("%lu: %u bcs-tx\n", call LocalTime.get(), call AMA.amAddress());
 //         printfflush();
 //       #endif
     }
     
 #ifdef ORINOCO_DEBUG_PRINTF
-    printf("%u ori bs %u %u %u %p %u %lu\n", TOS_NODE_ID, TOS_NODE_ID, txBeaconDst_, p->seqno, &txBeaconMsg_, error, call LocalTime.get());
+    printf("%u ori bs %u %u %u %p %u %lu\n", call AMA.amAddress(), call AMA.amAddress(), txBeaconDst_, p->seqno, &txBeaconMsg_, error, call LocalTime.get());
     printfflush();
 #endif
 
     #ifdef PRINTF_H
     if ((shortBcnTxCount_ + longBcnTxCount_) % 100 == 0) {
-      printf("%lu: %u bc-stat %lu %lu\n", call LocalTime.get(), TOS_NODE_ID, shortBcnTxCount_,longBcnTxCount_);
+      printf("%lu: %u bc-stat %lu %lu\n", call LocalTime.get(), call AMA.amAddress(), shortBcnTxCount_,longBcnTxCount_);
       printfflush();  
     }
     #endif
@@ -477,7 +478,7 @@ implementation {
 
     // forwarding completed -> switch off
     } else if (state_ == FORWARD_DONE) {
-      state_ == OFF_SUBSTOP;
+      state_ = OFF_SUBSTOP;
 
     // waiting for stopDone (to sleep) -> change to corresponding off step
     } else if (state_ == SLEEP_SUBSTOP_DONE) {
@@ -593,7 +594,7 @@ implementation {
       // no ack => wait again for beacon
       state_ = FORWARD_TIMER;
       
-//       printf("%u TOA %lu\n", TOS_NODE_ID, call LocalTime.get());
+//       printf("%u TOA %lu\n", call AMA.amAddress(), call LocalTime.get());
 //       printfflush();
     
     } else if (state_ == FORWARD) {
@@ -632,7 +633,7 @@ implementation {
     // node is in received state but no data came in
     } else if (state_ == RECEIVE) {
       dbg("receive timeout\n");
-//       printf("%u TO %lu\n", TOS_NODE_ID, call LocalTime.get());
+//       printf("%u TO %lu\n", call AMA.amAddress(), call LocalTime.get());
 //       printfflush();
       state_ = RECEIVE_DONE;
     }
@@ -662,7 +663,7 @@ implementation {
     #ifdef ORINOCO_DEBUG_PRINTF
     if (1) {
       OrinocoBeaconMsg  * p = call BeaconSubSend.getPayload(msg, sizeof(OrinocoBeaconMsg));
-      printf("%u ori br %u %u %u %u %u %p %u %lu\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), p->seqno, txDataDst_, txDataExpSeqno_, msg, state_, call LocalTime.get());
+      printf("%u ori br %u %u %u %u %u %p %u %lu\n", call AMA.amAddress(), call SubAMPacket.source(msg), call SubAMPacket.destination(msg), p->seqno, txDataDst_, txDataExpSeqno_, msg, state_, call LocalTime.get());
       printfflush();
     }
     #endif
@@ -759,7 +760,7 @@ implementation {
     } else if (state_ == FORWARD_SUBSEND || state_ == FORWARD_SUBSEND_DONE) {
 #ifdef ORINOCO_DEBUG_PRINTF
       OrinocoBeaconMsg  * p     = call BeaconSubSend.getPayload(msg, sizeof(OrinocoBeaconMsg));
-      printf("%u ori br! %u %u %u %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), p->seqno, txDataDst_, txDataExpSeqno_, msg);
+      printf("%u ori br! %u %u %u %u %u %p\n", call AMA.amAddress(), call SubAMPacket.source(msg), call SubAMPacket.destination(msg), p->seqno, txDataDst_, txDataExpSeqno_, msg);
       printfflush();
 #endif
     
@@ -801,7 +802,7 @@ implementation {
       call Timer.stop();  // just received data, stop timer
       
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u ori dr %u %u %p %u\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg, state_);
+      printf("%u ori dr %u %u %p %u\n", call AMA.amAddress(), call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg, state_);
       printfflush();
 #endif
 
@@ -811,7 +812,7 @@ implementation {
       //            information needs to be sent in the acknowledgment.
       rxRouteVersion_ = call RoutingState.getPacketRoutingInformationVersion(msg);
 //       #ifdef PRINTF_H
-//         printf("%lu: %u rcv-data %u (%u)\n", call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, rxRouteVersion_);
+//         printf("%lu: %u rcv-data %u (%u)\n", call LocalTime.get(), call AMA.amAddress(), txBeaconDst_, rxRouteVersion_);
 //         printfflush();
 //       #endif
       
@@ -842,13 +843,13 @@ implementation {
       }*/
       dbg("ignored data (NOT in receive state)\n");
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u ori di %u %u %p %u %lu\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg, state_, call LocalTime.get());
+      printf("%u ori di %u %u %p %u %lu\n", call AMA.amAddress(), call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg, state_, call LocalTime.get());
       printfflush();
 #endif
     } else {
       dbg("ignored data (NOT in receive state)\n");
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u ori di %u %u %p %u %lu\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg, state_, call LocalTime.get());
+      printf("%u ori di %u %u %p %u %lu\n", call AMA.amAddress(), call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg, state_, call LocalTime.get());
       printfflush();
 #endif
     }
@@ -899,7 +900,7 @@ implementation {
       state_++;   // ok -> next state
     } else {
 #ifdef ORINOCO_DEBUG_PRINTF
-      printf("%u ori bf %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
+      printf("%u ori bf %u %u %p\n", call AMA.amAddress(), call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
       printfflush();
 #endif
       state_ = SLEEP_SUBSTOP;  // could not send beacon, abort
@@ -916,10 +917,10 @@ implementation {
 
 #ifdef ORINOCO_DEBUG_PRINTF
     if (error != SUCCESS) {
-      printf("%u ori df %u %u %p %u\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg, state_);
+      printf("%u ori df %u %u %p %u\n", call AMA.amAddress(), call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg, state_);
       printfflush();
     } else {
-      printf("%u ori ds %u %u %u %u %p %p %u %lu\n", TOS_NODE_ID, TOS_NODE_ID, call SubAMPacket.destination(msg), txDataDst_, txDataExpSeqno_, msg, txDataMsg_, state_, call LocalTime.get());
+      printf("%u ori ds %u %u %u %u %p %p %u %lu\n", call AMA.amAddress(), call AMA.amAddress(), call SubAMPacket.destination(msg), txDataDst_, txDataExpSeqno_, msg, txDataMsg_, state_, call LocalTime.get());
       printfflush();
     }
 #endif
@@ -1074,6 +1075,8 @@ implementation {
   command void * Packet.getPayload(message_t * msg, uint8_t len) {
     return call SubPacket.getPayload(msg, len);
   }
+  
+  async event void AMA.changed() { }
 }
 
 

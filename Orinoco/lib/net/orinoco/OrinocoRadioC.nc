@@ -120,7 +120,10 @@ implementation {
   OrinocoRoutingRoot   = OrinocoRoutingC; // interface OrinocoRoutingRoot
   OrinocoRoutingClient = OrinocoRoutingC; // interface OrinocoRoutingClient
   Mac.Routing -> OrinocoRoutingC;         // interface OrinocoRoutingInternal
-  
+
+  components ActiveMessageAddressC as Address;
+  Mac.AMA -> Address;
+    
   components RandomC;
   Mac.Random -> RandomC;
 

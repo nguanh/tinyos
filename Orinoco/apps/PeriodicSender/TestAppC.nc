@@ -42,6 +42,11 @@
   #include "printf.h"
 #endif
 
+#ifdef TUDUNET
+  #include "StorageVolumes.h"
+#endif
+
+
 configuration TestAppC {
 }
 implementation {
@@ -66,6 +71,15 @@ implementation {
   TestC.Packet            -> OrinocoP;
   TestC.OrinocoConfig     -> OrinocoP;
   TestC.OrinocoRouting    -> OrinocoP;
+
+  components ActiveMessageAddressC as Address;
+  TestC.AMA -> Address;
+  
+  #ifdef TUDUNET
+  components Stm25pSpiC as AddressFlash;
+  TestC.AddressFlash    -> AddressFlash;
+  TestC.AddressResource -> AddressFlash;
+  #endif 
 
   // Orinoco internal reporting
   components OrinocoStatsReportingJobC;

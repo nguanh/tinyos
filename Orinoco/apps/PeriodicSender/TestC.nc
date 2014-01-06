@@ -65,7 +65,8 @@ module TestC {
     interface Packet;
     interface QueueSend as Send[collection_id_t];
     interface Leds;
-    
+    interface ActiveMessageAddress as AMA;
+
     interface LocalTime<TMilli>;
     interface Random;
     
@@ -75,6 +76,11 @@ module TestC {
     #ifdef ORINOCO_DEBUG_STATISTICS
     interface Receive as OrinocoDebugReporting;
     #endif
+    
+    #ifdef TUDUNET
+    interface Stm25pSpi as AddressFlash;
+    interface Resource as AddressResource;
+    #endif 
   }
 }
 implementation {
@@ -82,9 +88,30 @@ implementation {
   uint16_t   cnt = 0;
   bool       active = FALSE;
   uint32_t   delay = DATA_PERIOD;
+      
+  #ifdef TUDUNET    
+  typedef struct addrconf_t {
+    nx_uint16_t adde5221;    // beware of the 
+    nx_uint16_t address;     // endianness 
+  } addrconf_t;
+  addrconf_t addrconf_;
+  uint8_t addrBuf[32]; // min. Flash read size (read fails for smaller values)
+  #endif
   
   event void Boot.booted() {
-    // we're no root, just make sure
+  
+    #ifdef TUDUNET
+    call RadioControl.stop();
+    call ForwardingControl.stop();
+    call AddressResource.request();
+  } /* This effectively terminates Boot.booted() here...
+  ...and resumes operation when the address has been read from Flash! */
+  task void updateAddress() {
+    if (addrconf_.adde5221 == 0x5221) {
+      call AMA.setAddress(TOS_AM_GROUP, ~addrconf_.address);
+  	}
+    #endif
+
     call RootControl.unsetRoot();
 
     // switch on radio and enable routing
@@ -101,10 +128,10 @@ implementation {
     call Timer.startOneShot(1 + (call Random.rand32() % delay));
 
   }
-
+  
   event void BootTimer.fired() {
     // we need to delay this because printf is only set up at Boot.booted() and we cannot influence the order of event signalling
-    printf("%lu: %u sync\n", call LocalTime.get(), TOS_NODE_ID);
+    printf("%lu: %u sync\n", call LocalTime.get(), call AMA.amAddress());
     printfflush();
   }
 
@@ -120,10 +147,10 @@ implementation {
       result = call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(*d));
       #ifdef PRINTF_H
       if (SUCCESS == result) {
-        printf("%lu: %u data-tx %u\n", call LocalTime.get(), TOS_NODE_ID, *d);
+        printf("%lu: %u data-tx %u\n", call LocalTime.get(), call AMA.amAddress(), *d);
         printfflush();
       } else {
-        printf("%lu: %u data-fail %u\n", call LocalTime.get(), TOS_NODE_ID, *d);
+        printf("%lu: %u data-fail %u\n", call LocalTime.get(), call AMA.amAddress(), *d);
         printfflush();
       }
       #endif
@@ -141,7 +168,7 @@ implementation {
     error_t returnCode;
     
     #ifdef PRINTF_H
-      printf("%lu: %u cmd-rx %u\n", call LocalTime.get(), TOS_NODE_ID, identifier);
+      printf("%lu: %u cmd-rx %u\n", call LocalTime.get(), call AMA.amAddress(), identifier);
       printfflush();
     #endif
     
@@ -190,8 +217,38 @@ implementation {
   event void RadioControl.startDone(error_t error) { }
 
   event void RadioControl.stopDone(error_t error) { }
-  
 
+  /* ********************* READ NODE ID FROM FLASH ************************ */
+
+  #ifdef TUDUNET
+
+  event void AddressResource.granted() {
+    call AddressFlash.powerUp();
+    call AddressFlash.read(0, addrBuf, sizeof(addrBuf));
+  }
+  
+  
+  async event void AddressFlash.readDone(stm25p_addr_t addr, uint8_t* buf, stm25p_len_t len, error_t error) {
+   
+    if (error == SUCCESS) {
+      memcpy(&addrconf_, buf, sizeof(addrconf_));
+      post updateAddress();
+    }
+    
+    call AddressFlash.powerDown();
+    call AddressResource.release();
+  }
+
+  async event void AddressFlash.sectorEraseDone( uint8_t sector, error_t error ) {}
+  async event void AddressFlash.bulkEraseDone( error_t error ) {}
+  async event void AddressFlash.computeCrcDone( uint16_t crc, stm25p_addr_t addr,
+				   stm25p_len_t len, error_t error ) {}
+  async event void AddressFlash.pageProgramDone( stm25p_addr_t addr, uint8_t* buf, 
+				    stm25p_len_t len, error_t error ) {}
+  #endif
+  
+  async event void AMA.changed() { /* Ha ha, very funny. */ }
+    
   /* ************************* ORINOCO STATS ************************* */
   event message_t * OrinocoStatsReporting.receive(message_t *msg, void *payload, uint8_t len) {
     //call Send.send[CID_ORINOCO_STATS_REPORT](msg, len);  // packet is copied or rejected
@@ -206,7 +263,7 @@ implementation {
     OrinocoDebugReportingMsg * m = (OrinocoDebugReportingMsg *)payload;
     printf("%lu: %u dbg %u %u %u %lu %lu %u %lu %lu %lu %u %lu %u %u\n",
       call LocalTime.get(),
-      TOS_NODE_ID,
+      call AMA.amAddress(),
       m->seqno,
       m->qs.numPacketsDropped,
       m->qs.numDuplicates,

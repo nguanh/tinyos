@@ -11,6 +11,8 @@ CFLAGS += -DORINOCO_DEBUG_STATISTICS
 
 CFLAGS += -DUSE_PRINTF
 
+CFLAGS += -DTUDUNET
+
 CFLAGS += \
 	-I . \
 	-I ../../interfaces \

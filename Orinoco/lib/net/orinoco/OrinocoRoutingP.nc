@@ -92,7 +92,7 @@ implementation {
   }
 
   // calculate offsets in Bloom Filter after change of local node address
-  void updateHashes(void) {
+  task void updateHashes(void) {
     uint8_t i;
     
     localId_ = call AMA.amAddress();
@@ -177,7 +177,7 @@ implementation {
     }
 
     #ifdef PRINTF_H
-    printf("%lu: %u bf-inc %u\n", call Clock.get(), TOS_NODE_ID, curRouting_.version);
+    printf("%lu: %u bf-inc %u\n", call Clock.get(), localId_, curRouting_.version);
     printfflush();
     #endif
   }
@@ -325,12 +325,12 @@ implementation {
 
   // notification that node ID has changed   
   async event void AMA.changed() {
-    updateHashes();
+    post updateHashes();
   }
   
   // calculate hashes on bootup
   event void Boot.booted() {
-    updateHashes();
+    post updateHashes();
   }
   
   // ahm, this is weird...
