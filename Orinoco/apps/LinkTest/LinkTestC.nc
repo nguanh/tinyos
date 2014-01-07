@@ -82,7 +82,7 @@ implementation {
   event message_t* Receive.receive(message_t * bufPtr, void * payload, uint8_t len) {
     LinkTestMsg * p = (LinkTestMsg *)payload;
 
-    printf("%lu %u %u %lu\n", call LocalTime.get(), TOS_NODE_ID, call AMPacket.source(bufPtr), p->cnt);
+    printf("%lu %u %u %lu\n", call LocalTime.get(), call AMA.amAddress(), call AMPacket.source(bufPtr), p->cnt);
     printfflush();
     
     return bufPtr;
