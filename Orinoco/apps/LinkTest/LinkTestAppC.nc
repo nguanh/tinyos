@@ -1,3 +1,7 @@
+#ifdef TUDUNET
+  #include "StorageVolumes.h"
+#endif
+
 configuration LinkTestAppC {
 }
 implementation {
@@ -21,6 +25,15 @@ implementation {
 
    App.Boot       -> MainC.Boot;
    
+   components ActiveMessageAddressC as Address;
+   App.AMA -> Address;
+   
+   #ifdef TUDUNET
+   components Stm25pSpiC as AddressFlash;
+   App.AddressFlash    -> AddressFlash;
+   App.AddressResource -> AddressFlash;
+   #endif 
+
    App.Receive    -> AMReceiverC;
    App.AMSend     -> AMSenderC;
    App.AMControl  -> ActiveMessageC;
