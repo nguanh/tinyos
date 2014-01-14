@@ -1,6 +1,6 @@
 COMPONENT=TestAppC
 
-CC2420POWER=7
+CC2420POWER=31
 
 include $(MAKERULES)
 include ../Makefile.radioconfig
