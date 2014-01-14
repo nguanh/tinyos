@@ -814,10 +814,7 @@ implementation {
     dbg("received data\n");
 
     // received data outside receive => ignore to ease handling
-<<<<<<< HEAD
-=======
     // but include data received before returning to RECEIVE from RECEIVE_TIMER
->>>>>>> a90c2ff0002bc3f0fcac0f07fdc11354ff77eb52
     if (state_ == RECEIVE || state_ == RECEIVE_TIMER) {
       call Timer.stop();  // just received data, stop timer
       
@@ -836,8 +833,6 @@ implementation {
 //         printfflush();
 //       #endif
       
-      // FIXME we *must* check if there is room in the queue (otherwise the packet cannot be stored and will be lost!
-      // NOTE in general, we should not send beacons in this case at all!
       state_ = RECEIVE_SUBSEND;                  // and send another beacon
       post transition();
 
@@ -869,12 +864,7 @@ implementation {
     } else {
       dbg("ignored data (NOT in receive state)\n");
 #ifdef ORINOCO_DEBUG_PRINTF
-<<<<<<< HEAD
       printf("%u ori di %u %u %p %u %lu\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg, state_, call LocalTime.get());
-=======
-      printf("%u ori dz %u %u %p\n", TOS_NODE_ID, call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);
->>>>>>> a90c2ff0002bc3f0fcac0f07fdc11354ff77eb52
-      printfflush();
 #endif
     }
 
