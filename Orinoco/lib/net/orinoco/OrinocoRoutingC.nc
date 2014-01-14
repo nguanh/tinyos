@@ -57,10 +57,11 @@ implementation {
   OrinocoRoutingP.Send -> OrinocoP.Send;
   OrinocoRoutingP.Packet-> OrinocoP;
   
-  // DEBUG: Allow timestamping printf() messages
+  #ifdef PRINTF_H
   components LocalTimeMilliC as Clock;
   OrinocoRoutingP.Clock -> Clock;
-  
+  #endif
+
   // To re-calculate hashes on address change
   components ActiveMessageAddressC as Address;
   OrinocoRoutingP.AMA -> Address;

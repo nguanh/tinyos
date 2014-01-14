@@ -66,8 +66,11 @@ module TestC {
     interface QueueSend as Send[collection_id_t];
     interface Leds;
     
-    interface LocalTime<TMilli>;
     interface Random;
+
+    #ifdef PRINTF_H
+    interface LocalTime<TMilli>;
+    #endif    
     
     // Orinoco Stats
     interface Receive as OrinocoStatsReporting;
@@ -118,15 +121,15 @@ implementation {
       call Packet.clear(&myMsg);
       *d = cnt++;
       result = call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(*d));
-      #ifdef PRINTF_H
       if (SUCCESS == result) {
+        #ifdef PRINTF_H
         printf("%lu: %u data-tx %u\n", call LocalTime.get(), TOS_NODE_ID, *d);
         printfflush();
-      } else {
+        } else {
         printf("%lu: %u data-fail %u\n", call LocalTime.get(), TOS_NODE_ID, *d);
         printfflush();
+        #endif
       }
-      #endif
     }
     
     call Timer.startOneShot(delay);

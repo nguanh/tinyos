@@ -54,7 +54,6 @@
 #ifndef BLOOM_ADD_NODE_INTVL
 #  define BLOOM_ADD_NODE_INTVL 614400UL
 #endif
-//#pragma message "WAKEUP_INTVL =" WAKEUP_INTVL
   
 
 
