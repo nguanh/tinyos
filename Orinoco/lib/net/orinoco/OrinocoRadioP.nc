@@ -494,7 +494,7 @@ implementation {
 
     // forwarding completed -> switch off
     } else if (state_ == FORWARD_DONE) {
-      state_ == OFF_SUBSTOP;
+      state_ = OFF_SUBSTOP;
 
     // waiting for stopDone (to sleep) -> change to corresponding off step
     } else if (state_ == SLEEP_SUBSTOP_DONE) {
