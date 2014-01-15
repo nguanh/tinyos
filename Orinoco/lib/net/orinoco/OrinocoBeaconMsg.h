@@ -19,13 +19,13 @@ typedef enum {
   BLOOM_VERSION_MAX = 0xFE00,  // maximum version number of filter
 } orinoco_routing_parameters_t;
 
-typedef struct {
+typedef struct orinoco_bloom_pointers_t {
   uint8_t          hashes[BLOOM_HASHES]; // Offsets for each hash of local ID
   // IMPORTANT:    Increase this to uint16_t when BLOOM_BYTES > 32
 } orinoco_bloom_pointers_t;
 
-typedef nx_struct {
-  nx_uint16_t      version;             // version number of Bloom filter (+SHORT flag)
+typedef nx_struct orinoco_routing_t {
+  nx_uint16_t      version;             // version number of Bloom filter
   nx_uint8_t       cmd;                 // The command to execute at destinations
   nx_uint8_t       bloom[BLOOM_BYTES];  // Bloom filter of recipient IDs
 } orinoco_routing_t;

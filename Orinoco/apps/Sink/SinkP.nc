@@ -54,7 +54,6 @@
 #ifndef BLOOM_ADD_NODE_INTVL
 #  define BLOOM_ADD_NODE_INTVL 614400UL
 #endif
-//#pragma message "WAKEUP_INTVL =" WAKEUP_INTVL
   
 
 
@@ -180,7 +179,7 @@ implementation
 
   event void BootTimer.fired() {
     // we need to delay this because printf is only set up at Boot.booted() and we cannot influence the order of event signalling
-    printf("%lu: %u sync\n", call LocalTime.get(), TOS_NODE_ID);
+    printf("%lu: %u reset\n", call LocalTime.get(), TOS_NODE_ID);
     printfflush();
   }
 

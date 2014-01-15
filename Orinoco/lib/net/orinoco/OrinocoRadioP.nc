@@ -41,7 +41,7 @@
 // - snoop data packets and abort sending (while backing off),
 //   if packet directed to our target (?)
 // - intermit forwarding after (long) time out
-// + resend data packet when hearing an Ack from txDataDst_ for someone else
+// + resend data packet when hearing an Ack from txDataDst_ for someone else (DONE?)
 // + do not react on beacons (other than txDataDst_) while waiting for an ack (how to do this most efficiently and safely?)
 
 // + == work-in-progress, not verified
@@ -74,7 +74,11 @@ module OrinocoRadioP {
   uses {
     interface SplitControl as SubControl;
     interface Timer<TMilli>;
+
+    #ifdef PRINTF_H
     interface LocalTime<TMilli>;
+    #endif
+
     interface QueueStatus;
 
     // sending and receiving
@@ -128,7 +132,7 @@ implementation {
   uint16_t     rxRouteVersion_ = 0;
   
   // statistics
-  uint32_t  shortBcnTxCount_ = 0, longBcnTxCount_ = 0;
+  uint32_t  shortBcnTxCount_ = 0, longBcnTxCount_ = 0, errBcnTxCount_ = 0;
 
 #ifdef ORINOCO_DEBUG_STATISTICS
   orinoco_packet_statistics_t   ps_ = {0};
@@ -141,8 +145,10 @@ implementation {
   error_t sendBeacon() {
     OrinocoBeaconMsg  * p;
     error_t             error;
-
-    call SubPacket.clear(&txBeaconMsg_);  // FIXME SubBeacon?
+    uint8_t             beaconLength;
+    //uint16_t            delay; 
+    
+    call SubPacket.clear(&txBeaconMsg_);
     p = call BeaconSubSend.getPayload(&txBeaconMsg_, sizeof(OrinocoBeaconMsg));
     p->cost   = call PathCost.getCost();
     p->cw     = curCongestionWin_;
@@ -159,6 +165,10 @@ implementation {
     
       p->route = *(call Routing.getCurrentBloomFilter());
       p->flags |= ORINOCO_BEACON_FLAGS_CONTAINSROUTE;
+      beaconLength = sizeof(OrinocoBeaconMsg);
+    } else { 
+      beaconLength = sizeof(OrinocoBeaconMsg) - sizeof(orinoco_routing_t);
+    }
 
 //       #ifdef PRINTF_H
 //         printf("%lu: %u bcl-tx %u (%u)\n", 
@@ -166,25 +176,29 @@ implementation {
 //         printfflush();
 //       #endif
       
-      error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, sizeof(OrinocoBeaconMsg));
-      if (error == SUCCESS) {
-        lastBeaconDestination_ = txBeaconDst_;
+    error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, beaconLength);
+    if (error == SUCCESS) {
+      lastBeaconDestination_ = txBeaconDst_; 
+    }
+    
+    #ifdef PRINTF_H
+    if (error == SUCCESS) {
+      if (sizeof(OrinocoBeaconMsg) == beaconLength) {
+        //printf("%lu: %u bcl-tx %u (%u)\n", call LocalTime.get(), TOS_NODE_ID, txBeaconDst_, p->route.version);
+        //printfflush();
         longBcnTxCount_++;
-      }
-
-    // Periodic beacons have no routing information (multiple successive ACKs neither)
-    } else { 
-      error = call BeaconSubSend.send(txBeaconDst_, &txBeaconMsg_, 
-                 sizeof(OrinocoBeaconMsg) - sizeof(orinoco_routing_t));
-      if (error == SUCCESS) {
+      } else {
+        //printf("%lu: %u bcs-tx\n",call LocalTime.get(), TOS_NODE_ID);
+        //printfflush();
         shortBcnTxCount_++; 
       }
-      
-//       #ifdef PRINTF_H
-//         printf("%lu: %u bcs-tx\n", call LocalTime.get(), call AMA.amAddress());
-//         printfflush();
-//       #endif
+    } else {
+      //printf("%lu: %u bcn-fail\n",call LocalTime.get(), TOS_NODE_ID);
+      //printfflush();
+      errBcnTxCount_++;
     }
+    #endif
+
     
 #ifdef ORINOCO_DEBUG_PRINTF
     printf("%u ori bs %u %u %u %p %u %lu\n", call AMA.amAddress(), call AMA.amAddress(), txBeaconDst_, p->seqno, &txBeaconMsg_, error, call LocalTime.get());
@@ -193,8 +207,8 @@ implementation {
 
     #ifdef PRINTF_H
     if ((shortBcnTxCount_ + longBcnTxCount_) % 100 == 0) {
-      printf("%lu: %u bc-stat %lu %lu\n", call LocalTime.get(), call AMA.amAddress(), shortBcnTxCount_,longBcnTxCount_);
-      printfflush();  
+      printf("%lu: %u bc-stat %lu %lu %lu\n", call LocalTime.get(), call AMA.amAddress(), shortBcnTxCount_,longBcnTxCount_, errBcnTxCount_);
+      printfflush();
     }
     #endif
 
@@ -798,6 +812,7 @@ implementation {
     dbg("received data\n");
 
     // received data outside receive => ignore to ease handling
+    // but include data received before returning to RECEIVE from RECEIVE_TIMER
     if (state_ == RECEIVE || state_ == RECEIVE_TIMER) {
       call Timer.stop();  // just received data, stop timer
       
@@ -816,8 +831,6 @@ implementation {
 //         printfflush();
 //       #endif
       
-      // FIXME we *must* check if there is room in the queue (otherwise the packet cannot be stored and will be lost!
-      // NOTE in general, we should not send beacons in this case at all!
       state_ = RECEIVE_SUBSEND;                  // and send another beacon
       post transition();
 
@@ -897,7 +910,7 @@ implementation {
 #endif
 
     if (error == SUCCESS) {
-      state_++;   // ok -> next state
+      state_++;   // ok -> next state (RECEIVE_TIMER)
     } else {
 #ifdef ORINOCO_DEBUG_PRINTF
       printf("%u ori bf %u %u %p\n", call AMA.amAddress(), call SubAMPacket.source(msg), call SubAMPacket.destination(msg), msg);

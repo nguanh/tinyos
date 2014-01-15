@@ -65,10 +65,13 @@ module TestC {
     interface Packet;
     interface QueueSend as Send[collection_id_t];
     interface Leds;
-    interface ActiveMessageAddress as AMA;
 
-    interface LocalTime<TMilli>;
+    interface ActiveMessageAddress as AMA;
     interface Random;
+
+    #ifdef PRINTF_H
+    interface LocalTime<TMilli>;
+    #endif    
     
     // Orinoco Stats
     interface Receive as OrinocoStatsReporting;
@@ -131,7 +134,7 @@ implementation {
   
   event void BootTimer.fired() {
     // we need to delay this because printf is only set up at Boot.booted() and we cannot influence the order of event signalling
-    printf("%lu: %u sync\n", call LocalTime.get(), call AMA.amAddress());
+    printf("%lu: %u reset\n", call LocalTime.get(), call AMA.amAddress());
     printfflush();
   }
 
@@ -145,15 +148,15 @@ implementation {
       call Packet.clear(&myMsg);
       *d = cnt++;
       result = call Send.send[AM_PERIODIC_PACKET](&myMsg, sizeof(*d));
-      #ifdef PRINTF_H
       if (SUCCESS == result) {
+        #ifdef PRINTF_H
         printf("%lu: %u data-tx %u\n", call LocalTime.get(), call AMA.amAddress(), *d);
         printfflush();
-      } else {
+        } else {
         printf("%lu: %u data-fail %u\n", call LocalTime.get(), call AMA.amAddress(), *d);
         printfflush();
+        #endif
       }
-      #endif
     }
     
     call Timer.startOneShot(delay);
