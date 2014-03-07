@@ -8,7 +8,7 @@
  * @param f fractional part in hundreds, e.g., 0.7 => 70
  * @return i.f as type fp_t
  */
-inline fp_t fpConv(dect_t i, uint8_t f)
+/*inline*/ fp_t fpConv(dect_t i, uint8_t f)
 {
 	return ((fp_t) i << FP_FRACT_SIZE) + ((fp_t) f << FP_FRACT_SIZE) / 100;
 }
@@ -19,7 +19,7 @@ inline fp_t fpConv(dect_t i, uint8_t f)
  * @param a a fixed point number
  * @return the value of i as type dect_t
  */
-inline dect_t fpInt(fp_t a)
+/*inline*/ dect_t fpInt(fp_t a)
 {
 	return (dect_t)(a >> FP_FRACT_SIZE);
 }
@@ -29,7 +29,7 @@ inline dect_t fpInt(fp_t a)
  * @param b factor
  * @return a * b, the product
  */
-inline fp_t fpMlt(fp_t a, fp_t b)
+/*inline*/ fp_t fpMlt(fp_t a, fp_t b)
 {
 	// multiply in double precision
 	twicefp_t c = (twicefp_t) a * (twicefp_t) b;
@@ -46,7 +46,7 @@ inline fp_t fpMlt(fp_t a, fp_t b)
  * @param b factor
  * @return a * b, the product
  */
-inline sfp_t fpSMlt(sfp_t a, sfp_t b)
+/*inline*/ sfp_t fpSMlt(sfp_t a, sfp_t b)
 {
 	// TODO use faster implementation, which does not need to multiply
 	// two 32bit values (with all leading zeros in the first 16 bits each)
@@ -66,7 +66,7 @@ inline sfp_t fpSMlt(sfp_t a, sfp_t b)
  * @param b divisor
  * @return a / b, the quotient
  */
-inline fp_t fpDiv(fp_t a, fp_t b)
+/*inline*/ fp_t fpDiv(fp_t a, fp_t b)
 {
 	// pre-multiply by base to correct result
 	twicefp_t c = (twicefp_t) a << FP_FRACT_SIZE;
@@ -87,7 +87,7 @@ inline fp_t fpDiv(fp_t a, fp_t b)
  * @param a number to be inverted
  * @return 1 / a
  */
-inline fp_t fpInv(fp_t a)
+/*inline*/ fp_t fpInv(fp_t a)
 {
 	if (a == 0) return FP_NaN;
 	
@@ -208,3 +208,4 @@ fp_t fpExp(fp_t a)
 
 	return fpMlt(result, c);
 }
+
