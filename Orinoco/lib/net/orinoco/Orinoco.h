@@ -48,6 +48,9 @@
 //#include <TimeSyncMessageLayer.h>
 
 /* AM packet types */
+// Definiert Kommunikationskanäle
+// Über 128 werden Beacons versand
+// Über 129 die Daten
 enum {
   ORINOCO_AM_BEACON = 128,
   ORINOCO_AM_DATA   = 129
@@ -83,6 +86,9 @@ enum {
 enum {
   ORINOCO_MAX_PATH_RECORD = 7
 };
+// Definition von Paketen
+
+// Struct für header packet
 typedef nx_struct {
   nx_am_addr_t        origin;  // origin of data packet
   nx_uint8_t          seqno;   // sequence number
@@ -92,6 +98,8 @@ typedef nx_struct {
   nx_uint8_t          path[ORINOCO_MAX_PATH_RECORD];
 #endif
 } orinoco_data_header_t;
+
+
 
 typedef nx_struct {
   nx_uint32_t ctime;  // time of creation
